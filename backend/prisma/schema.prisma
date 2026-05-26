@@ -37,18 +37,20 @@ model User {
   email         String     @unique
   /// Null for OAuth-only accounts that never set a password.
   passwordHash  String?
-  emailVerified Boolean    @default(false)
   status        UserStatus @default(ACTIVE)
 
   roleId Int
   role   Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
   profile       UserProfile?
+  preferences   UserPreferences?
   authAccounts  AuthAccount[]
   refreshTokens RefreshToken[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Set on soft delete; non-null means the account is deactivated/removed
+  deletedAt DateTime?
 
   @@index([roleId])
   @@map("users")
@@ -60,14 +62,23 @@ model UserProfile {
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   displayName String?
   bio         String?
-  avatarUrl   String?
-  location    String?
-  websiteUrl  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("user_profiles")
+}
+
+model UserPreferences {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme     String   @default("system")
+  locale    String   @default("en")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
 }
 
 model AuthAccount {

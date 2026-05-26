@@ -9,21 +9,11 @@ import {
 } from '../../utils/jwt.js';
 import { parseDurationMs } from '../../utils/duration.js';
 import * as userRepo from '../user/user.repository.js';
+import { toPublicUser } from '../user/user.mapper.js';
 import * as tokenRepo from './auth.repository.js';
 
 const DEFAULT_ROLE = 'developer';
 const GENERIC_CREDENTIALS_ERROR = 'Invalid email or password';
-
-const toPublicUser = (user) => ({
-  id: user.publicId,
-  email: user.email,
-  role: user.role?.name ?? null,
-  emailVerified: user.emailVerified,
-  displayName: user.profile?.displayName ?? null,
-  avatarUrl: user.profile?.avatarUrl ?? null,
-  bio: user.profile?.bio ?? null,
-  createdAt: user.createdAt,
-});
 
 const issueTokens = async (user, ctx) => {
   const accessToken = signAccessToken({ sub: user.publicId, role: user.role.name });

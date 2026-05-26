@@ -17,4 +17,21 @@ export const ROUTES = Object.freeze({
     REFRESH: '/refresh',
     ME: '/me',
   }),
+  USERS: Object.freeze({
+    BASE: '/users',
+    ME: '/me',
+    PREFERENCES: '/me/preferences',
+  }),
 });
+
+export const THEMES = Object.freeze([
+  'system',
+  'light',
+  'dark',
+  'github',
+  'dracula',
+  'nord',
+  'vscode',
+]);
+
+export const DEFAULT_THEME = 'system';
