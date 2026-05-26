@@ -9,4 +9,12 @@ export const API_PREFIX = `/api/${API_VERSION}`;
 
 export const ROUTES = Object.freeze({
   HEALTH: '/health',
+  AUTH: Object.freeze({
+    BASE: '/auth',
+    REGISTER: '/register',
+    LOGIN: '/login',
+    LOGOUT: '/logout',
+    REFRESH: '/refresh',
+    ME: '/me',
+  }),
 });

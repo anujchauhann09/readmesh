@@ -8,10 +8,17 @@ const envSchema = z.object({
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
-  JWT_ACCESS_SECRET: z.string().min(1).optional(),
-  JWT_REFRESH_SECRET: z.string().min(1).optional(),
+  JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
+  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL: z.string().default('7d'),
+
+  COOKIE_SECURE: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
+  COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  COOKIE_DOMAIN: z.string().optional(),
 
   GITHUB_OAUTH_CLIENT_ID: z.string().optional(),
   GITHUB_OAUTH_CLIENT_SECRET: z.string().optional(),
@@ -53,6 +60,11 @@ export const config = Object.freeze({
     refreshSecret: env.JWT_REFRESH_SECRET,
     accessTtl: env.ACCESS_TOKEN_TTL,
     refreshTtl: env.REFRESH_TOKEN_TTL,
+  },
+  cookie: {
+    secure: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
+    sameSite: env.COOKIE_SAMESITE,
+    domain: env.COOKIE_DOMAIN,
   },
   oauth: {
     github: { clientId: env.GITHUB_OAUTH_CLIENT_ID, clientSecret: env.GITHUB_OAUTH_CLIENT_SECRET },
