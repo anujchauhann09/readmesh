@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, .dracula *, .nord *, .vscode *));
 :root {
   --background: 0 0% 100%;
   --foreground: 240 10% 3.9%;
@@ -44,6 +44,94 @@
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --ring: 240 4.9% 83.9%;
+}
+
+.github {
+  --background: 0 0% 100%;
+  --foreground: 215 14% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 14% 16%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 14% 16%;
+  --primary: 212 92% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 24% 96%;
+  --secondary-foreground: 215 14% 16%;
+  --muted: 210 24% 96%;
+  --muted-foreground: 213 9% 43%;
+  --accent: 210 24% 96%;
+  --accent-foreground: 215 14% 16%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 213 18% 84%;
+  --input: 213 18% 84%;
+  --ring: 212 92% 45%;
+}
+
+.dracula {
+  --background: 231 15% 18%;
+  --foreground: 60 30% 96%;
+  --card: 232 14% 22%;
+  --card-foreground: 60 30% 96%;
+  --popover: 232 14% 22%;
+  --popover-foreground: 60 30% 96%;
+  --primary: 265 89% 78%;
+  --primary-foreground: 231 15% 18%;
+  --secondary: 232 14% 31%;
+  --secondary-foreground: 60 30% 96%;
+  --muted: 232 14% 31%;
+  --muted-foreground: 226 27% 75%;
+  --accent: 232 14% 31%;
+  --accent-foreground: 60 30% 96%;
+  --destructive: 0 100% 67%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 232 14% 31%;
+  --input: 232 14% 31%;
+  --ring: 265 89% 78%;
+}
+
+.nord {
+  --background: 220 16% 22%;
+  --foreground: 218 27% 94%;
+  --card: 222 16% 28%;
+  --card-foreground: 218 27% 94%;
+  --popover: 222 16% 28%;
+  --popover-foreground: 218 27% 94%;
+  --primary: 193 43% 67%;
+  --primary-foreground: 220 16% 22%;
+  --secondary: 220 17% 32%;
+  --secondary-foreground: 218 27% 94%;
+  --muted: 220 17% 32%;
+  --muted-foreground: 219 18% 74%;
+  --accent: 220 17% 32%;
+  --accent-foreground: 218 27% 94%;
+  --destructive: 354 42% 56%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 17% 32%;
+  --input: 220 17% 32%;
+  --ring: 193 43% 67%;
+}
+
+.vscode {
+  --background: 0 0% 12%;
+  --foreground: 0 0% 83%;
+  --card: 0 0% 15%;
+  --card-foreground: 0 0% 83%;
+  --popover: 0 0% 15%;
+  --popover-foreground: 0 0% 83%;
+  --primary: 207 89% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 92%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 0 0% 24%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 70% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 27%;
+  --input: 0 0% 27%;
+  --ring: 207 89% 54%;
 }
 
 
@@ -185,6 +273,8 @@
 .shiki-container .shiki {
   margin: 0;
   padding: 1rem;
+  width: max-content;
+  min-width: 100%;
 }
 .shiki-container .shiki code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

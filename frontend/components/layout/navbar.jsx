@@ -29,6 +29,9 @@ export function Navbar() {
           <Link href="/read" className="text-sm text-muted-foreground hover:text-foreground">
             Read a repo
           </Link>
+          <Link href="/editor" className="text-sm text-muted-foreground hover:text-foreground">
+            Editor
+          </Link>
         </div>
 
         <DropdownMenu>

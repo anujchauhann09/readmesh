@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
+import { useDialog } from '@/providers/dialog-provider';
 import { ThemeSelect } from '@/components/settings/theme-select';
 import { Button } from '@/components/ui/button';
 
@@ -10,10 +11,17 @@ export default function SettingsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { deleteAccount } = useProfile();
+  const dialog = useDialog();
   if (!user) return null;
 
-  const handleDelete = () => {
-    if (!window.confirm('Delete your account? This cannot be undone.')) return;
+  const handleDelete = async () => {
+    const ok = await dialog.confirm({
+      title: 'Delete account?',
+      description: 'This deactivates your account and signs you out everywhere. This cannot be undone.',
+      confirmLabel: 'Delete account',
+      destructive: true,
+    });
+    if (!ok) return;
     deleteAccount.mutate(undefined, { onSuccess: () => router.replace('/') });
   };
 
