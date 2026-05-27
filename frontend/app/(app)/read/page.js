@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { loadRepoRequest, getContentRequest } from '@/lib/api/github';
+import { Markdown } from '@/components/markdown/markdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export default function ReadPage() {
   const [url, setUrl] = useState('');
   const [active, setActive] = useState(null); // { path, content }
+  const [view, setView] = useState('rendered'); // 'rendered' | 'source'
 
   const repo = useMutation({
     mutationFn: loadRepoRequest,
@@ -31,8 +33,8 @@ export default function ReadPage() {
     <main className="mx-auto max-w-5xl px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Read a repository</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Paste a public GitHub repo URL. Rich rendering arrives in the reading-experience phase —
-        for now this shows the normalized markdown source.
+        Paste a public GitHub repo URL to read its docs — rendered with syntax highlighting,
+        diagrams, math, and callouts.
       </p>
 
       <form
@@ -111,10 +113,40 @@ export default function ReadPage() {
               <p className="text-sm text-muted-foreground">Loading file…</p>
             ) : active ? (
               <>
-                <p className="mb-2 text-xs text-muted-foreground">{active.path}</p>
-                <pre className="overflow-auto rounded-lg border border-border bg-card p-4 text-sm">
-                  <code className="whitespace-pre-wrap break-words">{active.content}</code>
-                </pre>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="truncate text-xs text-muted-foreground">{active.path}</p>
+                  <div className="flex shrink-0 overflow-hidden rounded-md border border-border text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setView('rendered')}
+                      className={
+                        view === 'rendered'
+                          ? 'bg-accent px-2 py-1 font-medium'
+                          : 'px-2 py-1 text-muted-foreground hover:bg-accent/50'
+                      }
+                    >
+                      Rendered
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setView('source')}
+                      className={
+                        view === 'source'
+                          ? 'border-l border-border bg-accent px-2 py-1 font-medium'
+                          : 'border-l border-border px-2 py-1 text-muted-foreground hover:bg-accent/50'
+                      }
+                    >
+                      Source
+                    </button>
+                  </div>
+                </div>
+                {view === 'rendered' ? (
+                  <Markdown content={active.content} />
+                ) : (
+                  <pre className="overflow-auto rounded-lg border border-border bg-card p-4 text-sm">
+                    <code className="whitespace-pre-wrap break-words">{active.content}</code>
+                  </pre>
+                )}
               </>
             ) : (
               <p className="text-sm text-muted-foreground">This repository has no README.</p>
