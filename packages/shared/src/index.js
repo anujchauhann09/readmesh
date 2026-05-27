@@ -22,6 +22,12 @@ export const ROUTES = Object.freeze({
     ME: '/me',
     PREFERENCES: '/me/preferences',
   }),
+  GITHUB: Object.freeze({
+    BASE: '/github',
+    RESOLVE: '/resolve',
+    REPO: '/repo',
+    CONTENT: '/content',
+  }),
 });
 
 export const THEMES = Object.freeze([

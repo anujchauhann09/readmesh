@@ -22,9 +22,14 @@ export function Navbar() {
   return (
     <header className="border-b border-border">
       <nav className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-        <Link href="/dashboard" className="font-semibold tracking-tight">
-          {APP_NAME}
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link href="/dashboard" className="font-semibold tracking-tight">
+            {APP_NAME}
+          </Link>
+          <Link href="/read" className="text-sm text-muted-foreground hover:text-foreground">
+            Read a repo
+          </Link>
+        </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1 pr-2 outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring">
