@@ -342,3 +342,8 @@ button.md-section-toggle:hover {
   background: hsl(var(--accent));
   color: hsl(var(--foreground));
 }
+
+.cite-flash {
+  background: hsl(48 96% 53% / 0.35);
+  color: hsl(var(--foreground));
+}

@@ -118,3 +118,122 @@ export const generateContent = async ({
     throw ApiError.badGateway('The AI returned malformed data');
   }
 };
+
+export async function* generateContentStream({
+  prompt,
+  system,
+  temperature = 0.3,
+  maxOutputTokens = 2048,
+  signal,
+}) {
+  requireKey();
+
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { temperature, maxOutputTokens },
+  };
+  if (system) body.systemInstruction = { parts: [{ text: system }] };
+
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}/${config.ai.geminiModel}:streamGenerateContent?alt=sse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.ai.geminiApiKey },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    throw ApiError.badGateway('Could not reach the AI provider');
+  }
+
+  if (!res.ok) {
+    if (res.status === 429) throw quotaError(await safeJson(res));
+    throw ApiError.badGateway(`AI provider error (${res.status})`);
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  for await (const part of res.body) {
+    buffer += decoder.decode(part, { stream: true });
+    const frames = buffer.split('\n');
+    buffer = frames.pop() ?? '';
+    for (const frame of frames) {
+      const line = frame.trim();
+      if (!line.startsWith('data:')) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === '[DONE]') continue;
+      let json;
+      try {
+        json = JSON.parse(payload);
+      } catch {
+        continue; 
+      }
+      const text = (json.candidates?.[0]?.content?.parts ?? [])
+        .map((p) => p.text ?? '')
+        .join('');
+      if (text) yield text;
+    }
+  }
+}
+
+const embedOne = async (text, taskType) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}/${config.ai.embedModel}:embedContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.ai.geminiApiKey },
+      body: JSON.stringify({
+        model: `models/${config.ai.embedModel}`,
+        content: { parts: [{ text }] },
+        taskType,
+        outputDimensionality: config.ai.embedDimension,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    throw ApiError.badGateway(
+      err.name === 'AbortError' ? 'Embedding request timed out' : 'Could not reach the AI provider',
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!res.ok) {
+    if (res.status === 429) throw quotaError(await safeJson(res));
+    throw ApiError.badGateway(`Embedding provider error (${res.status})`);
+  }
+
+  const data = await res.json();
+  const values = data.embedding?.values;
+  if (!Array.isArray(values)) {
+    throw ApiError.badGateway('Embedding provider returned an unexpected response');
+  }
+  return values;
+};
+
+export const embedTexts = async (
+  texts,
+  { taskType = 'RETRIEVAL_DOCUMENT', concurrency = 5 } = {},
+) => {
+  requireKey();
+  if (!Array.isArray(texts) || texts.length === 0) return [];
+
+  const vectors = new Array(texts.length);
+  let cursor = 0;
+
+  const worker = async () => {
+    while (cursor < texts.length) {
+      const i = cursor;
+      cursor += 1;
+      vectors[i] = await embedOne(texts[i], taskType);
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, texts.length) }, worker));
+  return vectors;
+};

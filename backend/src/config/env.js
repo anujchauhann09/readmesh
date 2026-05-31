@@ -28,11 +28,13 @@ const envSchema = z.object({
   GITHUB_PAT: z.string().optional(),
 
   GEMINI_API_KEY: z.string().optional(),
-  // Canonical model var; GEMINI_API_MODEL is accepted as an alias.
   GEMINI_MODEL: z.string().optional(),
   GEMINI_API_MODEL: z.string().optional(),
+  GEMINI_EMBED_MODEL: z.string().default('gemini-embedding-001'),
+  EMBED_DIMENSION: z.coerce.number().int().positive().default(768),
   PINECONE_API_KEY: z.string().optional(),
   PINECONE_INDEX: z.string().default('readmesh'),
+  PINECONE_HOST: z.string().optional(),
 });
 
 const GEMINI_MODEL_DEFAULT = 'gemini-2.0-flash';
@@ -81,6 +83,12 @@ export const config = Object.freeze({
   ai: {
     geminiApiKey: env.GEMINI_API_KEY,
     geminiModel: env.GEMINI_MODEL ?? env.GEMINI_API_MODEL ?? GEMINI_MODEL_DEFAULT,
-    pinecone: { apiKey: env.PINECONE_API_KEY, index: env.PINECONE_INDEX },
+    embedModel: env.GEMINI_EMBED_MODEL,
+    embedDimension: env.EMBED_DIMENSION,
+    pinecone: {
+      apiKey: env.PINECONE_API_KEY,
+      index: env.PINECONE_INDEX,
+      host: env.PINECONE_HOST,
+    },
   },
 });

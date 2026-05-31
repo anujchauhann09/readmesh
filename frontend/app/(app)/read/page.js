@@ -315,6 +315,8 @@ export default function ReadPage() {
               key={active.path}
               content={previewContent}
               repoName={data.repo.name}
+              repoUrl={data.repo.fullName}
+              repoRef={data.ref}
               onClose={() => setAiOpen(false)}
             />
           </div>

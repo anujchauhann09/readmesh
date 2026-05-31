@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Languages,
   Loader2,
+  MessageSquare,
   RotateCcw,
   Sparkles,
   Terminal,
@@ -16,9 +17,11 @@ import {
 import { SUMMARY_LANGUAGES } from '@readmesh/shared';
 import { useSummary } from '@/hooks/use-summary';
 import { Markdown } from '@/components/markdown/markdown';
+import { RepoChat } from '@/components/read/repo-chat';
 import { cn } from '@/lib/utils';
 
 const TABS = [
+  { key: 'chat', label: 'Chat', icon: MessageSquare },
   { key: 'tldr', label: 'TL;DR', icon: FileText },
   { key: 'commands', label: 'Commands', icon: Terminal },
   { key: 'beginner', label: 'Beginner', icon: GraduationCap },
@@ -28,11 +31,8 @@ const TABS = [
 const errorMessage = (error) =>
   error?.response?.data?.error?.message || error?.message || 'Something went wrong.';
 
-// AI runs only when the user asks for it — nothing fires on open or on tab
-// switch. This keeps free-tier quota spend explicit and deterministic: one
-// click = one request, for the single file currently open.
-export function AiPanel({ content, repoName, onClose }) {
-  const [tab, setTab] = useState('tldr');
+export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
+  const [tab, setTab] = useState('chat');
   const [language, setLanguage] = useState(SUMMARY_LANGUAGES[0].code);
   const { tldr, commands, beginner, translate } = useSummary();
 
@@ -72,6 +72,11 @@ export function AiPanel({ content, repoName, onClose }) {
         ))}
       </div>
 
+      {tab === 'chat' ? (
+        <div className="min-h-0 flex-1 p-4">
+          <RepoChat url={repoUrl} repoRef={repoRef} />
+        </div>
+      ) : (
       <div className="min-h-0 flex-1 overflow-auto p-4">
         {tab === 'tldr' && (
           <Feature
@@ -141,6 +146,7 @@ export function AiPanel({ content, repoName, onClose }) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -323,7 +329,6 @@ function CopyButton({ text }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
-      /* clipboard unavailable */
     }
   };
   return (

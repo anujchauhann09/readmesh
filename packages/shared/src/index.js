@@ -35,6 +35,12 @@ export const ROUTES = Object.freeze({
     BEGINNER: '/beginner',
     TRANSLATE: '/translate',
   }),
+  RAG: Object.freeze({
+    BASE: '/rag',
+    INGEST: '/ingest',
+    ASK: '/ask',
+    ASK_STREAM: '/ask/stream',
+  }),
 });
 
 export const THEMES = Object.freeze([
