@@ -291,3 +291,54 @@
 .callout-body p {
   margin: 0.5em 0;
 }
+
+.markdown-body mark.rm-hl {
+  background: hsl(48 96% 53% / 0.4);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+  scroll-margin-top: 6rem;
+}
+.markdown-body mark.rm-hl.rm-hl-active {
+  background: hsl(28 96% 53% / 0.75);
+  outline: 1px solid hsl(28 96% 45%);
+}
+
+.md-section {
+  margin-top: 1.6em;
+}
+.markdown-body > .md-section:first-child {
+  margin-top: 0;
+}
+.md-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.md-section-heading > :where(h1, h2, h3, h4, h5, h6) {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.md-section--h2 > .md-section-heading {
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 0.3em;
+}
+.md-section-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 4px;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+button.md-section-toggle:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
+}

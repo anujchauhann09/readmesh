@@ -10,15 +10,18 @@ import 'katex/dist/katex.min.css';
 
 import { remarkCallouts } from '@/lib/markdown/remark-callouts';
 import { sanitizeSchema } from '@/lib/markdown/sanitize-schema';
+import { rehypeCollapsibleSections } from '@/lib/markdown/rehype-collapsible';
 import { parseEmbed } from '@/lib/markdown/embeds';
 import { CodeBlock } from './code-block';
 import { Mermaid } from './mermaid';
 import { Callout } from './callout';
 import { MarkdownImage } from './markdown-image';
 import { Embed } from './embed';
+import { CollapsibleSection } from './collapsible-section';
 
 const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkCallouts];
 const REHYPE_PLUGINS = [rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeKatex];
+const REHYPE_PLUGINS_COLLAPSIBLE = [...REHYPE_PLUGINS, rehypeCollapsibleSections];
 
 const nodeText = (node) =>
   (node?.children ?? []).map((c) => (c.type === 'text' ? c.value : nodeText(c))).join('');
@@ -74,14 +77,19 @@ const components = {
       </a>
     );
   },
+  section({ node, children }) {
+    const depth = Number(node?.properties?.dataDepth) || undefined;
+    if (!depth) return <section>{children}</section>;
+    return <CollapsibleSection depth={depth}>{children}</CollapsibleSection>;
+  },
 };
 
-export function Markdown({ content = '' }) {
+export function Markdown({ content = '', collapsibleSections = false }) {
   return (
     <div className="markdown-body min-w-0">
       <ReactMarkdown
         remarkPlugins={REMARK_PLUGINS}
-        rehypePlugins={REHYPE_PLUGINS}
+        rehypePlugins={collapsibleSections ? REHYPE_PLUGINS_COLLAPSIBLE : REHYPE_PLUGINS}
         components={components}
       >
         {content}

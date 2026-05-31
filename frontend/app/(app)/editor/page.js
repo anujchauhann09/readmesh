@@ -5,7 +5,9 @@ import { MarkdownEditor } from '@/components/editor/markdown-editor';
 import { Markdown } from '@/components/markdown/markdown';
 import { ExportMenu } from '@/components/export/export-menu';
 import { ThemeMenu } from '@/components/read/theme-menu';
+import { DocSearch } from '@/components/read/doc-search';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useDocSearch } from '@/hooks/use-doc-search';
 import { cn } from '@/lib/utils';
 
 const SAMPLE = `# Markdown Editor
@@ -63,9 +65,10 @@ const titleFromMarkdown = (md) => {
 
 export default function EditorPage() {
   const [source, setSource] = useState(SAMPLE);
-  const [mobileView, setMobileView] = useState('edit'); // mobile only: 'edit' | 'preview'
+  const [mobileView, setMobileView] = useState('edit'); 
   const preview = useDebouncedValue(source, 150);
   const previewRef = useRef(null);
+  const search = useDocSearch(previewRef, preview);
   const title = useMemo(() => titleFromMarkdown(source), [source]);
 
   return (
@@ -120,12 +123,23 @@ export default function EditorPage() {
         />
         <div
           className={cn(
-            'min-h-[72vh] overflow-auto rounded-lg border border-border p-4 lg:p-6',
-            mobileView === 'edit' && 'hidden lg:block',
+            'flex max-h-[72vh] flex-col rounded-lg border border-border',
+            mobileView === 'edit' && 'hidden lg:flex',
           )}
         >
-          <div ref={previewRef}>
-            <Markdown content={preview} />
+          <div className="flex items-center border-b border-border p-2">
+            <DocSearch
+              query={search.query}
+              onQueryChange={search.setQuery}
+              count={search.count}
+              activeIndex={search.activeIndex}
+              onNext={search.next}
+              onPrev={search.prev}
+              onClear={search.clear}
+            />
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto p-4 lg:p-6" ref={previewRef}>
+            <Markdown content={preview} collapsibleSections />
           </div>
         </div>
       </div>

@@ -56,16 +56,28 @@ export function MarkdownEditor({ value, onChange, className, minHeight = '24rem'
     setCaret(ta, s + m, s + m + text.length);
   };
 
-  const prefixLines = (makePrefix) => {
+  const toggleLinePrefix = (makePrefix, detectRe, stripRe = detectRe) => {
     const ta = ref.current;
     if (!ta) return;
     const { selectionStart: start, selectionEnd: end } = ta;
     const lineStart = value.lastIndexOf('\n', start - 1) + 1;
     const block = value.slice(lineStart, end);
-    const replaced = block
-      .split('\n')
-      .map((line, i) => makePrefix(i) + line)
+    const lines = block.split('\n');
+    const meaningful = lines.filter((line) => line.trim().length > 0);
+    const allPrefixed = meaningful.length > 0 && meaningful.every((line) => detectRe.test(line));
+
+    let n = 0;
+    const replaced = lines
+      .map((line) => {
+        const bare = line.replace(stripRe, '');
+        if (allPrefixed) return bare;
+        if (line.trim().length === 0) return bare;
+        const out = makePrefix(n) + bare;
+        n += 1;
+        return out;
+      })
       .join('\n');
+
     onChange(value.slice(0, lineStart) + replaced + value.slice(end));
     setCaret(ta, lineStart, lineStart + replaced.length);
   };
@@ -144,13 +156,13 @@ export function MarkdownEditor({ value, onChange, className, minHeight = '24rem'
   return (
     <div className={cn('flex flex-col rounded-lg border border-border', className)}>
       <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-1.5 py-1">
-        <Btn title="Heading 1" onClick={() => prefixLines(() => '# ')}>
+        <Btn title="Heading 1" onClick={() => toggleLinePrefix(() => '# ', /^# /, /^#{1,6} /)}>
           <Heading1 className="h-4 w-4" />
         </Btn>
-        <Btn title="Heading 2" onClick={() => prefixLines(() => '## ')}>
+        <Btn title="Heading 2" onClick={() => toggleLinePrefix(() => '## ', /^## /, /^#{1,6} /)}>
           <Heading2 className="h-4 w-4" />
         </Btn>
-        <Btn title="Heading 3" onClick={() => prefixLines(() => '### ')}>
+        <Btn title="Heading 3" onClick={() => toggleLinePrefix(() => '### ', /^### /, /^#{1,6} /)}>
           <Heading3 className="h-4 w-4" />
         </Btn>
         <Sep />
@@ -173,13 +185,19 @@ export function MarkdownEditor({ value, onChange, className, minHeight = '24rem'
         <Btn title="Image" onClick={addImage}>
           <ImageIcon className="h-4 w-4" />
         </Btn>
-        <Btn title="Bulleted list" onClick={() => prefixLines(() => '- ')}>
+        <Btn
+          title="Bulleted list"
+          onClick={() => toggleLinePrefix(() => '- ', /^[-*+] /, /^([-*+] |\d+\. )/)}
+        >
           <List className="h-4 w-4" />
         </Btn>
-        <Btn title="Numbered list" onClick={() => prefixLines((i) => `${i + 1}. `)}>
+        <Btn
+          title="Numbered list"
+          onClick={() => toggleLinePrefix((i) => `${i + 1}. `, /^\d+\. /, /^([-*+] |\d+\. )/)}
+        >
           <ListOrdered className="h-4 w-4" />
         </Btn>
-        <Btn title="Quote" onClick={() => prefixLines(() => '> ')}>
+        <Btn title="Quote" onClick={() => toggleLinePrefix(() => '> ', /^> ?/)}>
           <Quote className="h-4 w-4" />
         </Btn>
         <Btn title="Table" onClick={() => insertAtCursor('\n| Column A | Column B |\n| --- | --- |\n| cell | cell |\n')}>

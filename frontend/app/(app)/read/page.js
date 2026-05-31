@@ -10,8 +10,11 @@ import { ReadingProgress } from '@/components/read/reading-progress';
 import { FileNav } from '@/components/read/file-nav';
 import { Toc } from '@/components/read/toc';
 import { ThemeMenu } from '@/components/read/theme-menu';
+import { Breadcrumb } from '@/components/read/breadcrumb';
+import { DocSearch } from '@/components/read/doc-search';
 import { ExportMenu } from '@/components/export/export-menu';
 import { useToc } from '@/hooks/use-toc';
+import { useDocSearch } from '@/hooks/use-doc-search';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +33,9 @@ export default function ReadPage() {
   }, [active]);
 
   const previewContent = useDebouncedValue(draft, 150);
-  const { headings, activeId } = useToc(contentRef, active ? previewContent : null);
+  const contentKey = active ? previewContent : null;
+  const { headings, activeId } = useToc(contentRef, contentKey);
+  const search = useDocSearch(contentRef, contentKey);
   const edited = Boolean(active) && draft !== active.content;
 
   const repo = useMutation({
@@ -180,45 +185,60 @@ export default function ReadPage() {
           </aside>
 
           <section className="min-w-0">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="truncate text-xs text-muted-foreground">
-                {active?.path}
-                {edited && <span className="text-foreground"> • edited</span>}
-              </p>
+            <div className="mb-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Breadcrumb
+                  repo={data.repo.name}
+                  path={active?.path}
+                  onRoot={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                />
+                {edited && <span className="shrink-0 text-xs text-foreground">• edited</span>}
+              </div>
               {active && (
-                <div className="flex shrink-0 items-center gap-2">
-                  {edited && (
-                    <button
-                      type="button"
-                      onClick={() => setDraft(active.content)}
-                      className="text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      Revert
-                    </button>
-                  )}
-                  <div className="flex overflow-hidden rounded-md border border-border text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setView('rendered')}
-                      className={
-                        view === 'rendered'
-                          ? 'bg-accent px-2 py-1 font-medium'
-                          : 'px-2 py-1 text-muted-foreground hover:bg-accent/50'
-                      }
-                    >
-                      Rendered
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setView('edit')}
-                      className={
-                        view === 'edit'
-                          ? 'border-l border-border bg-accent px-2 py-1 font-medium'
-                          : 'border-l border-border px-2 py-1 text-muted-foreground hover:bg-accent/50'
-                      }
-                    >
-                      Edit
-                    </button>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <DocSearch
+                    query={search.query}
+                    onQueryChange={search.setQuery}
+                    count={search.count}
+                    activeIndex={search.activeIndex}
+                    onNext={search.next}
+                    onPrev={search.prev}
+                    onClear={search.clear}
+                  />
+                  <div className="flex shrink-0 items-center gap-2">
+                    {edited && (
+                      <button
+                        type="button"
+                        onClick={() => setDraft(active.content)}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Revert
+                      </button>
+                    )}
+                    <div className="flex overflow-hidden rounded-md border border-border text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setView('rendered')}
+                        className={
+                          view === 'rendered'
+                            ? 'bg-accent px-2 py-1 font-medium'
+                            : 'px-2 py-1 text-muted-foreground hover:bg-accent/50'
+                        }
+                      >
+                        Rendered
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setView('edit')}
+                        className={
+                          view === 'edit'
+                            ? 'border-l border-border bg-accent px-2 py-1 font-medium'
+                            : 'border-l border-border px-2 py-1 text-muted-foreground hover:bg-accent/50'
+                        }
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -237,7 +257,7 @@ export default function ReadPage() {
                   />
                 )}
                 <div ref={contentRef}>
-                  <Markdown content={previewContent} />
+                  <Markdown content={previewContent} collapsibleSections />
                 </div>
               </>
             ) : (
