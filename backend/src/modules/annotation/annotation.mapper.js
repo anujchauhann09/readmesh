@@ -1,0 +1,18 @@
+export const toPublicAnnotation = (a) => ({
+  id: a.publicId,
+  type: a.type,
+  repoOwner: a.repoOwner,
+  repoName: a.repoName,
+  repoRef: a.repoRef,
+  filePath: a.filePath,
+  exact: a.exact,
+  prefix: a.prefix,
+  suffix: a.suffix,
+  textPosition: a.textPosition,
+  sectionId: a.sectionId,
+  sectionTitle: a.sectionTitle,
+  color: a.color,
+  body: a.body,
+  createdAt: a.createdAt,
+  updatedAt: a.updatedAt,
+});

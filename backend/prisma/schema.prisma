@@ -19,6 +19,12 @@ enum UserStatus {
   DELETED
 }
 
+enum AnnotationType {
+  HIGHLIGHT
+  NOTE
+  COMMENT
+}
+
 model Role {
   id          Int      @id @default(autoincrement())
   name        String   @unique
@@ -30,14 +36,13 @@ model Role {
   @@map("roles")
 }
 
-
 model User {
-  id            Int        @id @default(autoincrement())
-  publicId      String     @unique @default(uuid()) @db.Uuid
-  email         String     @unique
+  id           Int        @id @default(autoincrement())
+  publicId     String     @unique @default(uuid()) @db.Uuid
+  email        String     @unique
   /// Null for OAuth-only accounts that never set a password.
-  passwordHash  String?
-  status        UserStatus @default(ACTIVE)
+  passwordHash String?
+  status       UserStatus @default(ACTIVE)
 
   roleId Int
   role   Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
@@ -46,6 +51,7 @@ model User {
   preferences   UserPreferences?
   authAccounts  AuthAccount[]
   refreshTokens RefreshToken[]
+  annotations   Annotation[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -97,12 +103,12 @@ model AuthAccount {
 }
 
 model RefreshToken {
-  id           Int       @id @default(autoincrement())
-  userId       Int
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash    String    @unique
-  expiresAt    DateTime
-  revokedAt    DateTime?
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
 
   replacedById Int?          @unique
   replacedBy   RefreshToken? @relation("TokenRotation", fields: [replacedById], references: [id])
@@ -115,4 +121,35 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model Annotation {
+  id       Int            @id @default(autoincrement())
+  publicId String         @unique @default(uuid()) @db.Uuid
+  userId   Int
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type     AnnotationType
+
+  repoOwner String
+  repoName  String
+  repoRef   String
+  filePath  String
+
+  exact        String  @db.Text
+  prefix       String? @db.Text
+  suffix       String? @db.Text
+  textPosition Int?
+
+  sectionId    String?
+  sectionTitle String?
+
+  color String?
+  body  String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, repoOwner, repoName, repoRef, filePath])
+  @@map("annotations")
 }

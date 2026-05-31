@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { ListTree, Menu, RotateCcw, Sparkles, X } from 'lucide-react';
+import { Highlighter, ListTree, Menu, RotateCcw, Sparkles, X } from 'lucide-react';
 import { loadRepoRequest, getContentRequest } from '@/lib/api/github';
 import { Markdown } from '@/components/markdown/markdown';
 import { MarkdownEditor } from '@/components/editor/markdown-editor';
@@ -13,9 +13,12 @@ import { ThemeMenu } from '@/components/read/theme-menu';
 import { Breadcrumb } from '@/components/read/breadcrumb';
 import { DocSearch } from '@/components/read/doc-search';
 import { AiPanel } from '@/components/read/ai-panel';
+import { AnnotationLayer } from '@/components/read/annotation-layer';
+import { AnnotationsPanel } from '@/components/read/annotations-panel';
 import { ExportMenu } from '@/components/export/export-menu';
 import { useToc } from '@/hooks/use-toc';
 import { useDocSearch } from '@/hooks/use-doc-search';
+import { useAnnotations } from '@/hooks/use-annotations';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +31,7 @@ export default function ReadPage() {
   const [view, setView] = useState('rendered');
   const [panel, setPanel] = useState(null);
   const [aiOpen, setAiOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -60,6 +64,21 @@ export default function ReadPage() {
   const data = repo.data;
   const error = repo.error || file.error;
 
+  const annoDoc = {
+    owner: data?.repo?.owner,
+    name: data?.repo?.name,
+    ref: data?.ref,
+    path: active?.path,
+  };
+  const annoScope = {
+    repoOwner: data?.repo?.owner,
+    repoName: data?.repo?.name,
+    repoRef: data?.ref,
+    filePath: active?.path,
+  };
+  const annotations = useAnnotations(annoDoc);
+  const canAnnotate = Boolean(active) && view === 'rendered';
+
   const openFile = (filePath) => {
     file.mutate({ owner: data.repo.owner, repo: data.repo.name, ref: data.ref, path: filePath });
     setPanel(null);
@@ -69,6 +88,27 @@ export default function ReadPage() {
     repo.reset();
     file.reset();
     setActive(null);
+  };
+
+  const jumpToAnnotation = (a) => {
+    setNotesOpen(false);
+    const mark =
+      a.type !== 'COMMENT' && contentRef.current?.querySelector(`mark[data-annot-id="${a.id}"]`);
+    if (mark) {
+      mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      mark.classList.add('rm-annot-active');
+      setTimeout(() => mark.classList.remove('rm-annot-active'), 1200);
+      return;
+    }
+    if (a.sectionId) {
+      document.getElementById(a.sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const copyAnnotationLink = (a) => {
+    const hash = a.sectionId ? `#${a.sectionId}` : '';
+    const link = `${window.location.origin}${window.location.pathname}${hash}`;
+    navigator.clipboard?.writeText(link);
   };
 
   if (!data) {
@@ -141,6 +181,21 @@ export default function ReadPage() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => setNotesOpen(true)}
+              disabled={!active}
+              title="Notes & highlights"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent disabled:opacity-40"
+            >
+              <Highlighter className="h-4 w-4" />
+              <span className="hidden sm:inline">Notes</span>
+              {annotations.annotations.length > 0 && (
+                <span className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+                  {annotations.annotations.length}
+                </span>
+              )}
+            </button>
             <button
               type="button"
               onClick={() => setAiOpen(true)}
@@ -271,6 +326,19 @@ export default function ReadPage() {
                 <div ref={contentRef}>
                   <Markdown content={previewContent} collapsibleSections />
                 </div>
+                {canAnnotate && (
+                  <AnnotationLayer
+                    contentRef={contentRef}
+                    contentKey={contentKey}
+                    doc={annoScope}
+                    annotations={annotations.annotations}
+                    onCreate={(payload) => {
+                      annotations.create.mutate(payload);
+                      if (payload.type !== 'HIGHLIGHT') setNotesOpen(true);
+                    }}
+                    onDelete={(a) => annotations.remove.mutate(a.id)}
+                  />
+                )}
               </>
             ) : (
               <p className="text-sm text-muted-foreground">This repository has no README.</p>
@@ -318,6 +386,21 @@ export default function ReadPage() {
               repoUrl={data.repo.fullName}
               repoRef={data.ref}
               onClose={() => setAiOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {notesOpen && active && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setNotesOpen(false)} />
+          <div className="absolute inset-y-0 right-0 w-full max-w-md border-l border-border bg-background shadow-xl">
+            <AnnotationsPanel
+              annotations={annotations.annotations}
+              onClose={() => setNotesOpen(false)}
+              onJump={jumpToAnnotation}
+              onCopyLink={copyAnnotationLink}
+              onDelete={(a) => annotations.remove.mutate(a.id)}
             />
           </div>
         </div>

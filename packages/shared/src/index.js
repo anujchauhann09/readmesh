@@ -41,6 +41,11 @@ export const ROUTES = Object.freeze({
     ASK: '/ask',
     ASK_STREAM: '/ask/stream',
   }),
+  ANNOTATIONS: Object.freeze({
+    BASE: '/annotations',
+    ROOT: '/',
+    BY_ID: '/:id',
+  }),
 });
 
 export const THEMES = Object.freeze([
@@ -72,3 +77,8 @@ export const SUMMARY_LANGUAGE_CODES = SUMMARY_LANGUAGES.map((l) => l.code);
 
 export const summaryLanguageLabel = (code) =>
   SUMMARY_LANGUAGES.find((l) => l.code === code)?.label ?? code;
+
+export const ANNOTATION_TYPES = Object.freeze(['HIGHLIGHT', 'NOTE', 'COMMENT']);
+
+export const HIGHLIGHT_COLORS = Object.freeze(['yellow', 'green', 'blue', 'pink', 'purple']);
+export const DEFAULT_HIGHLIGHT_COLOR = 'yellow';

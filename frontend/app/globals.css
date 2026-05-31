@@ -347,3 +347,40 @@ button.md-section-toggle:hover {
   background: hsl(48 96% 53% / 0.35);
   color: hsl(var(--foreground));
 }
+
+.markdown-body mark.rm-annot {
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+  cursor: pointer;
+  scroll-margin-top: 6rem;
+}
+.markdown-body mark.rm-annot-yellow {
+  background: hsl(48 96% 53% / 0.4);
+}
+.markdown-body mark.rm-annot-green {
+  background: hsl(142 70% 45% / 0.35);
+}
+.markdown-body mark.rm-annot-blue {
+  background: hsl(212 92% 55% / 0.32);
+}
+.markdown-body mark.rm-annot-pink {
+  background: hsl(330 81% 60% / 0.32);
+}
+.markdown-body mark.rm-annot-purple {
+  background: hsl(265 89% 66% / 0.32);
+}
+.markdown-body mark.rm-annot-note {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.markdown-body mark.rm-annot-comment {
+  background: hsl(212 92% 55% / 0.18);
+  text-decoration: underline solid;
+  text-decoration-color: hsl(212 92% 55%);
+  text-underline-offset: 3px;
+}
+.markdown-body mark.rm-annot.rm-annot-active {
+  outline: 2px solid hsl(var(--ring));
+}

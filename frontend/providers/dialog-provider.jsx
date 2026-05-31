@@ -12,7 +12,8 @@ export const useDialog = () => {
 };
 
 export function DialogProvider({ children }) {
-  const [state, setState] = useState(null); 
+  const [state, setState] = useState(null);
+  const resolveRef = useRef(null);
 
   const open = useCallback(
     (kind, options = {}) =>
