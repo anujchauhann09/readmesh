@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { ListTree, Menu, RotateCcw, X } from 'lucide-react';
+import { ListTree, Menu, RotateCcw, Sparkles, X } from 'lucide-react';
 import { loadRepoRequest, getContentRequest } from '@/lib/api/github';
 import { Markdown } from '@/components/markdown/markdown';
 import { MarkdownEditor } from '@/components/editor/markdown-editor';
@@ -12,6 +12,7 @@ import { Toc } from '@/components/read/toc';
 import { ThemeMenu } from '@/components/read/theme-menu';
 import { Breadcrumb } from '@/components/read/breadcrumb';
 import { DocSearch } from '@/components/read/doc-search';
+import { AiPanel } from '@/components/read/ai-panel';
 import { ExportMenu } from '@/components/export/export-menu';
 import { useToc } from '@/hooks/use-toc';
 import { useDocSearch } from '@/hooks/use-doc-search';
@@ -24,8 +25,9 @@ export default function ReadPage() {
   const [url, setUrl] = useState('');
   const [active, setActive] = useState(null); 
   const [draft, setDraft] = useState(''); 
-  const [view, setView] = useState('rendered'); 
-  const [panel, setPanel] = useState(null); 
+  const [view, setView] = useState('rendered');
+  const [panel, setPanel] = useState(null);
+  const [aiOpen, setAiOpen] = useState(false);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -139,6 +141,16 @@ export default function ReadPage() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => setAiOpen(true)}
+              disabled={!active}
+              title="AI assistant"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent disabled:opacity-40"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">AI</span>
+            </button>
             <ThemeMenu />
             <ExportMenu
               getMarkdown={() => draft}
@@ -291,6 +303,20 @@ export default function ReadPage() {
               </button>
             </div>
             {panel === 'files' ? fileNav : toc}
+          </div>
+        </div>
+      )}
+
+      {aiOpen && active && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setAiOpen(false)} />
+          <div className="absolute inset-y-0 right-0 w-full max-w-md border-l border-border bg-background shadow-xl">
+            <AiPanel
+              key={active.path}
+              content={previewContent}
+              repoName={data.repo.name}
+              onClose={() => setAiOpen(false)}
+            />
           </div>
         </div>
       )}

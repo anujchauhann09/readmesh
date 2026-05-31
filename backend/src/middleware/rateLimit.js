@@ -22,3 +22,9 @@ export const strictRateLimiter = createLimiter({
   max: 30,
   message: 'Too many attempts, please slow down.',
 });
+
+export const aiLimiter = createLimiter({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: 'Too many AI requests. Please slow down and try again shortly.',
+});

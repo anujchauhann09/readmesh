@@ -28,6 +28,13 @@ export const ROUTES = Object.freeze({
     REPO: '/repo',
     CONTENT: '/content',
   }),
+  SUMMARY: Object.freeze({
+    BASE: '/summary',
+    TLDR: '/tldr',
+    COMMANDS: '/commands',
+    BEGINNER: '/beginner',
+    TRANSLATE: '/translate',
+  }),
 });
 
 export const THEMES = Object.freeze([
@@ -41,3 +48,21 @@ export const THEMES = Object.freeze([
 ]);
 
 export const DEFAULT_THEME = 'system';
+
+export const SUMMARY_LANGUAGES = Object.freeze([
+  { code: 'hi', label: 'Hindi' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'fr', label: 'French' },
+  { code: 'de', label: 'German' },
+  { code: 'zh', label: 'Chinese (Simplified)' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'ar', label: 'Arabic' },
+  { code: 'ko', label: 'Korean' },
+]);
+
+export const SUMMARY_LANGUAGE_CODES = SUMMARY_LANGUAGES.map((l) => l.code);
+
+export const summaryLanguageLabel = (code) =>
+  SUMMARY_LANGUAGES.find((l) => l.code === code)?.label ?? code;
