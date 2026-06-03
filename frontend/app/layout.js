@@ -21,6 +21,17 @@ export const metadata = {
   description: APP_TAGLINE,
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // Allow zoom for accessibility; extend under notches/safe areas.
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0B0D12' },
+    { media: '(prefers-color-scheme: light)', color: '#FBFAF7' },
+  ],
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>

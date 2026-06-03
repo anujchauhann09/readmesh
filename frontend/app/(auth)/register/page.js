@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const { register } = useAuth();
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
+    <main className="flex app-min-h flex-col items-center justify-center px-6 py-12">
       <Link href="/" className="mb-8">
         <Logo markSize={32} nameClassName="text-lg" />
       </Link>

@@ -11,9 +11,12 @@ export function MeshBackground({ density = 0.00009, className = '' }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return undefined;
 
+    const mq = (q) => window.matchMedia?.(q).matches;
     const reduce =
       typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      (mq('(prefers-reduced-motion: reduce)') ||
+        mq('(pointer: coarse)') ||
+        window.innerWidth < 768);
 
     let width = 0;
     let height = 0;
@@ -94,7 +97,6 @@ export function MeshBackground({ density = 0.00009, className = '' }) {
         if (n.x < 0 || n.x > width) n.vx *= -1;
         if (n.y < 0 || n.y > height) n.vy *= -1;
 
-        // gentle pull toward the cursor
         const dx = pointer.x - n.x;
         const dy = pointer.y - n.y;
         const d = Math.hypot(dx, dy);

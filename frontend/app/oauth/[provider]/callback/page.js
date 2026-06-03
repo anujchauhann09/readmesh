@@ -9,8 +9,6 @@ import { oauthCallbackRequest } from '@/lib/api/oauth';
 import { claimGuestDraft } from '@/lib/documents/claim-draft';
 import { LogoMark } from '@/components/brand/logo';
 
-// Module-scoped so an OAuth code is exchanged exactly once, even across React
-// StrictMode's dev double-mount (providers reject a reused authorization code).
 let exchangedCode = null;
 
 function OAuthCallback() {
@@ -48,7 +46,7 @@ function OAuthCallback() {
 
   if (error) {
     return (
-      <main className="grid min-h-screen place-items-center px-6">
+      <main className="grid app-min-h place-items-center px-6">
         <div className="rm-panel rm-rise w-full max-w-sm p-8 text-center">
           <LogoMark size={34} />
           <h1 className="mt-4 font-display text-lg font-semibold">Sign-in failed</h1>
@@ -65,7 +63,7 @@ function OAuthCallback() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center">
+    <main className="grid app-min-h place-items-center">
       <div className="flex flex-col items-center gap-4 text-muted-foreground">
         <span className="rm-float">
           <LogoMark size={38} />

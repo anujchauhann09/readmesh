@@ -62,7 +62,7 @@ export default function HomePage() {
   const showPreview = view !== 'editor';
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex app-h flex-col">
       <header className="glass-bar z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/70 px-4">
         <div className="flex min-w-0 items-center gap-3">
           <Link href="/" className="shrink-0">
@@ -76,7 +76,7 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden items-center rounded-lg border border-border/70 bg-card/40 p-0.5 text-xs backdrop-blur-sm sm:flex">
+          <div className="flex items-center rounded-lg border border-border/70 bg-card/40 p-0.5 text-xs backdrop-blur-sm">
             {VIEWS.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -153,7 +153,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Workspace — floating glass panels over the mesh */}
       <div
         className={cn(
           'grid min-h-0 flex-1 gap-3 p-3',

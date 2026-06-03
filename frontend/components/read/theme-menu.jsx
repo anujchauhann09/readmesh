@@ -34,7 +34,7 @@ export function ThemeMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring">
         <Palette className="h-4 w-4" />
-        Theme
+        <span className="hidden sm:inline">Theme</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {THEMES.map((t) => (
