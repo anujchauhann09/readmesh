@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Columns2, Eye, Pencil, Plus, Sparkles } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { MarkdownEditor } from '@/components/editor/markdown-editor';
-import { Markdown } from '@/components/markdown/markdown';
 import { ThemeMenu } from '@/components/read/theme-menu';
 import { Logo } from '@/components/brand/logo';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -19,6 +19,16 @@ const VIEWS = [
   { key: 'preview', label: 'Preview', icon: Eye },
 ];
 
+const Markdown = dynamic(
+  () => import('@/components/markdown/markdown').then((m) => m.Markdown),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="px-6 py-7 text-sm text-muted-foreground">Loading preview…</div>
+    ),
+  },
+);
+
 export default function HomePage() {
   const router = useRouter();
   const { user, requireAuth, openAuth } = useAuthGate();
@@ -29,7 +39,6 @@ export default function HomePage() {
   const previewRef = useRef(null);
   const preview = useDebouncedValue(source, 150);
 
-  // Load the saved draft once on mount (falls back to the sample document).
   useEffect(() => {
     const saved =
       typeof window !== 'undefined' ? window.localStorage.getItem(DRAFT_KEY) : null;
@@ -56,6 +65,12 @@ export default function HomePage() {
     requireAuth(() => router.push('/read'), {
       title: 'Sign in to use AI',
       description: 'AI summaries, chat, explanations, and translations live in the repo reader.',
+    });
+
+  const onRead = () =>
+    requireAuth(() => router.push('/read'), {
+      title: 'Sign in to read a repo',
+      description: 'Sign in to explore GitHub repositories with the readmesh reader.',
     });
 
   const showEditor = view !== 'preview';
@@ -137,12 +152,13 @@ export default function HomePage() {
           >
             <Plus className="h-3.5 w-3.5" /> New
           </button>
-          <Link
-            href="/read"
+          <button
+            type="button"
+            onClick={onRead}
             className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <BookOpen className="h-3.5 w-3.5" /> Read a repo
-          </Link>
+          </button>
         </div>
         <div className="flex items-center gap-3 text-[0.7rem] text-muted-foreground">
           <span className="hidden tabular-nums sm:inline">{words} words</span>
