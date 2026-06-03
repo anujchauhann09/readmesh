@@ -22,6 +22,7 @@ export function AuthModal({ title, description, onClose, onAuthed }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [form, setForm] = useState({ email: '', password: '', displayName: '' });
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -34,6 +35,12 @@ export function AuthModal({ title, description, onClose, onAuthed }) {
   const mutation = useMutation({
     mutationFn: mode === 'register' ? registerRequest : loginRequest,
     onSuccess: async (data) => {
+      if (mode === 'register') {
+        setMode('login');
+        setForm((f) => ({ ...f, password: '', displayName: '' }));
+        setNotice('Successfully registered — please sign in to continue.');
+        return;
+      }
       queryClient.setQueryData(AUTH_ME_KEY, data.user ?? data);
       await claimGuestDraft().catch(() => null);
       queryClient.invalidateQueries({ queryKey: ['documents'] });
@@ -45,6 +52,7 @@ export function AuthModal({ title, description, onClose, onAuthed }) {
   const submit = (e) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     const payload =
       mode === 'register' ? form : { email: form.email, password: form.password };
     mutation.mutate(payload);
@@ -80,6 +88,12 @@ export function AuthModal({ title, description, onClose, onAuthed }) {
             {description || DEFAULT_DESCRIPTION}
           </p>
         </div>
+
+        {notice && (
+          <p className="mb-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center text-sm text-emerald-600 dark:text-emerald-400">
+            {notice}
+          </p>
+        )}
 
         <SocialAuth />
 
@@ -133,6 +147,7 @@ export function AuthModal({ title, description, onClose, onAuthed }) {
             onClick={() => {
               setMode(mode === 'register' ? 'login' : 'register');
               setError(null);
+              setNotice(null);
             }}
             className="font-medium text-foreground hover:underline"
           >

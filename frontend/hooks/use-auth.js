@@ -19,7 +19,7 @@ export function useAuth() {
   const setUser = (user) => queryClient.setQueryData(AUTH_ME_KEY, user);
 
   const login = useMutation({ mutationFn: loginRequest, onSuccess: setUser });
-  const register = useMutation({ mutationFn: registerRequest, onSuccess: setUser });
+  const register = useMutation({ mutationFn: registerRequest });
   const logout = useMutation({
     mutationFn: logoutRequest,
     onSuccess: () => setUser(null),

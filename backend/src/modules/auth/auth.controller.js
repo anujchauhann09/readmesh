@@ -10,9 +10,12 @@ const contextOf = (req) => ({
 });
 
 export const register = asyncHandler(async (req, res) => {
-  const { user, tokens } = await authService.register(req.validated.body, contextOf(req));
-  setAuthCookies(res, tokens);
-  sendSuccess(res, { statusCode: 201, message: 'Account created', data: { user } });
+  const { user } = await authService.register(req.validated.body);
+  sendSuccess(res, {
+    statusCode: 201,
+    message: 'Account created — please sign in',
+    data: { user },
+  });
 });
 
 export const login = asyncHandler(async (req, res) => {

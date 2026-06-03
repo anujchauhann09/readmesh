@@ -30,7 +30,7 @@ export const issueTokens = async (user, ctx) => {
   return { accessToken, refreshToken };
 };
 
-export const register = async ({ email, password, displayName }, ctx) => {
+export const register = async ({ email, password, displayName }) => {
   const existing = await userRepo.findByEmailWithSecret(email);
   if (existing) throw ApiError.conflict('An account with this email already exists');
 
@@ -45,8 +45,7 @@ export const register = async ({ email, password, displayName }, ctx) => {
     roleId: role.id,
   });
 
-  const tokens = await issueTokens(user, ctx);
-  return { user: toPublicUser(user), tokens };
+  return { user: toPublicUser(user) };
 };
 
 export const login = async ({ email, password }, ctx) => {
