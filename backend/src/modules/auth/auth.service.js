@@ -15,7 +15,7 @@ import * as tokenRepo from './auth.repository.js';
 const DEFAULT_ROLE = 'developer';
 const GENERIC_CREDENTIALS_ERROR = 'Invalid email or password';
 
-const issueTokens = async (user, ctx) => {
+export const issueTokens = async (user, ctx) => {
   const accessToken = signAccessToken({ sub: user.publicId, role: user.role.name });
   const { token: refreshToken, tokenHash } = generateRefreshToken({ sub: user.publicId });
 

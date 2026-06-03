@@ -17,13 +17,16 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((v) => (v === undefined ? undefined : v === 'true')),
-  COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).optional(),
   COOKIE_DOMAIN: z.string().optional(),
 
+  FRONTEND_URL: z.string().optional(),
   GITHUB_OAUTH_CLIENT_ID: z.string().optional(),
   GITHUB_OAUTH_CLIENT_SECRET: z.string().optional(),
+  GITHUB_CALLBACK_URL: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CALLBACK_URL: z.string().optional(),
 
   GITHUB_PAT: z.string().optional(),
 
@@ -70,12 +73,21 @@ export const config = Object.freeze({
   },
   cookie: {
     secure: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
-    sameSite: env.COOKIE_SAMESITE,
+    sameSite: env.COOKIE_SAMESITE ?? (env.NODE_ENV === 'production' ? 'none' : 'lax'),
     domain: env.COOKIE_DOMAIN,
   },
+  frontendUrl: env.FRONTEND_URL ?? env.CORS_ORIGIN.split(',')[0].trim(),
   oauth: {
-    github: { clientId: env.GITHUB_OAUTH_CLIENT_ID, clientSecret: env.GITHUB_OAUTH_CLIENT_SECRET },
-    google: { clientId: env.GOOGLE_OAUTH_CLIENT_ID, clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET },
+    github: {
+      clientId: env.GITHUB_OAUTH_CLIENT_ID,
+      clientSecret: env.GITHUB_OAUTH_CLIENT_SECRET,
+      callbackUrl: env.GITHUB_CALLBACK_URL,
+    },
+    google: {
+      clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+      callbackUrl: env.GOOGLE_CALLBACK_URL,
+    },
   },
   github: {
     pat: env.GITHUB_PAT,

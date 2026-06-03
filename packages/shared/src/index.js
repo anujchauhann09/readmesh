@@ -51,7 +51,14 @@ export const ROUTES = Object.freeze({
     ROOT: '/',
     BY_ID: '/:id',
   }),
+  OAUTH: Object.freeze({
+    BASE: '/oauth',
+    START: '/:provider',
+    CALLBACK: '/:provider/callback',
+  }),
 });
+
+export const OAUTH_PROVIDERS = Object.freeze(['google', 'github']);
 
 export const DOCUMENT_LIMITS = Object.freeze({
   TITLE_MAX: 200,

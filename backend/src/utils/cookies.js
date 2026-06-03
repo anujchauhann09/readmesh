@@ -33,3 +33,12 @@ export const clearAuthCookies = (res) => {
   res.clearCookie(ACCESS_COOKIE, { ...opts, path: '/' });
   res.clearCookie(REFRESH_COOKIE, { ...opts, path: REFRESH_COOKIE_PATH });
 };
+
+export const OAUTH_STATE_COOKIE = 'rm_oauth_state';
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
+export const setOAuthStateCookie = (res, state) =>
+  res.cookie(OAUTH_STATE_COOKIE, state, { ...baseOptions(), path: '/', maxAge: OAUTH_STATE_TTL_MS });
+
+export const clearOAuthStateCookie = (res) =>
+  res.clearCookie(OAUTH_STATE_COOKIE, { ...baseOptions(), path: '/' });

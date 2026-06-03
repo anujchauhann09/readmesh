@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Github } from 'lucide-react';
+import { oauthStartUrl } from '@/lib/api/oauth';
 
 const PROVIDERS = [
   { key: 'google', label: 'Google', Icon: GoogleIcon },
@@ -9,7 +10,12 @@ const PROVIDERS = [
 ];
 
 export function SocialAuth({ showDivider = true }) {
-  const [note, setNote] = useState(null);
+  const [busy, setBusy] = useState(null);
+
+  const start = (key) => {
+    setBusy(key);
+    window.location.assign(oauthStartUrl(key));
+  };
 
   return (
     <div>
@@ -18,20 +24,15 @@ export function SocialAuth({ showDivider = true }) {
           <button
             key={key}
             type="button"
-            onClick={() => setNote(label)}
-            className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-card/40 px-3 py-2.5 text-sm font-medium backdrop-blur-sm transition-colors hover:border-brand-violet/40 hover:bg-accent"
+            disabled={Boolean(busy)}
+            onClick={() => start(key)}
+            className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-card/40 px-3 py-2.5 text-sm font-medium backdrop-blur-sm transition-colors hover:border-brand-violet/40 hover:bg-accent disabled:opacity-60"
           >
             <Icon className="h-[1.1rem] w-[1.1rem]" />
-            Continue with {label}
+            {busy === key ? `Redirecting to ${label}…` : `Continue with ${label}`}
           </button>
         ))}
       </div>
-
-      {note && (
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          {note} sign-in is coming soon — continue with email for now.
-        </p>
-      )}
 
       {showDivider && (
         <div className="my-4 flex items-center gap-3">

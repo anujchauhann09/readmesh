@@ -38,6 +38,32 @@ export const createLocalUser = ({ email, passwordHash, displayName, roleId }) =>
     select: BASE_SELECT,
   });
 
+export const findByProviderAccount = (provider, providerAccountId) =>
+  prisma.user.findFirst({
+    where: { deletedAt: null, authAccounts: { some: { provider, providerAccountId } } },
+    select: BASE_SELECT,
+  });
+
+export const createOAuthUser = ({ email, displayName, roleId, provider, providerAccountId }) =>
+  prisma.user.create({
+    data: {
+      email,
+      passwordHash: null,
+      roleId,
+      profile: { create: { displayName: displayName ?? null } },
+      preferences: { create: {} },
+      authAccounts: { create: { provider, providerAccountId } },
+    },
+    select: BASE_SELECT,
+  });
+
+export const linkAuthAccount = (publicId, { provider, providerAccountId }) =>
+  prisma.user.update({
+    where: { publicId },
+    data: { authAccounts: { create: { provider, providerAccountId } } },
+    select: BASE_SELECT,
+  });
+
 export const updateProfile = (publicId, data) =>
   prisma.user.update({
     where: { publicId },

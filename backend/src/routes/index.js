@@ -8,6 +8,7 @@ import { summaryRouter } from '../modules/summary/summary.route.js';
 import { ragRouter } from '../modules/rag/rag.route.js';
 import { annotationRouter } from '../modules/annotation/annotation.route.js';
 import { documentRouter } from '../modules/document/document.route.js';
+import { oauthRouter } from '../modules/oauth/oauth.route.js';
 
 export const apiRouter = Router();
 
@@ -19,5 +20,6 @@ apiRouter.use(ROUTES.SUMMARY.BASE, summaryRouter);
 apiRouter.use(ROUTES.RAG.BASE, ragRouter);
 apiRouter.use(ROUTES.ANNOTATIONS.BASE, annotationRouter);
 apiRouter.use(ROUTES.DOCUMENTS.BASE, documentRouter);
+apiRouter.use(ROUTES.OAUTH.BASE, oauthRouter);
 
 
