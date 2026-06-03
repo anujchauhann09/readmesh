@@ -16,8 +16,8 @@ export function FileNav({ files = [], activePath, truncated, onOpen }) {
 
   return (
     <nav aria-label="Repository files" className="text-sm">
-      <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Files ({files.length}
+      <p className="mb-3 flex items-center gap-2 px-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="rm-node-dot" aria-hidden /> Files ({files.length}
         {truncated ? '+' : ''})
       </p>
       <div className="space-y-3">
@@ -36,10 +36,10 @@ export function FileNav({ files = [], activePath, truncated, onOpen }) {
                     onClick={() => onOpen(f.path)}
                     title={f.path}
                     className={cn(
-                      'w-full truncate rounded px-2 py-1 text-left hover:bg-accent',
+                      'w-full truncate rounded-md border-l-2 px-2 py-1 text-left transition-colors hover:bg-accent',
                       activePath === f.path
-                        ? 'bg-accent font-medium text-foreground'
-                        : 'text-muted-foreground',
+                        ? 'border-brand-violet bg-accent font-medium text-foreground'
+                        : 'border-transparent text-muted-foreground',
                     )}
                   >
                     {f.name}

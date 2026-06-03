@@ -10,19 +10,21 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <main className="mx-auto max-w-lg space-y-6 px-6 py-10">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="text-sm text-muted-foreground">How you appear in readmesh.</p>
+    <main className="mx-auto max-w-lg space-y-6 px-6 py-12">
+      <div className="rm-rise">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">Profile</h1>
+        <p className="mt-1 text-sm text-muted-foreground">How you appear in readmesh.</p>
       </div>
 
-      <ProfileForm
-        user={user}
-        isLoading={updateProfile.isPending}
-        error={updateProfile.error}
-        saved={updateProfile.isSuccess}
-        onSubmit={(payload) => updateProfile.mutate(payload)}
-      />
+      <div className="rm-panel rm-rise-2 p-6">
+        <ProfileForm
+          user={user}
+          isLoading={updateProfile.isPending}
+          error={updateProfile.error}
+          saved={updateProfile.isSuccess}
+          onSubmit={(payload) => updateProfile.mutate(payload)}
+        />
+      </div>
     </main>
   );
 }

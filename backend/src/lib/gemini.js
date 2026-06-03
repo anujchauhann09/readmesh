@@ -5,6 +5,13 @@ import { ApiError } from '../common/ApiError.js';
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 const TIMEOUT_MS = 30_000;
 
+// Calm, reassuring copy shown to users. The technical cause is logged separately
+// so a raw "malformed data" / "AI provider error (503)" never reaches the UI.
+const AI_BUSY = 'The AI is busy right now. Please try again in a moment.';
+const AI_RETRY = 'The AI couldn’t finish that response. Please try again.';
+
+const providerErrorMessage = (status) => (status === 503 || status === 429 ? AI_BUSY : AI_RETRY);
+
 export const isAiEnabled = () => Boolean(config.ai.geminiApiKey);
 
 const requireKey = () => {
@@ -77,8 +84,9 @@ export const generateContent = async ({
       signal: controller.signal,
     });
   } catch (err) {
+    logger.warn({ scope: 'generateContent', cause: err.name }, 'Gemini request failed');
     throw ApiError.badGateway(
-      err.name === 'AbortError' ? 'AI request timed out' : 'Could not reach the AI provider',
+      err.name === 'AbortError' ? 'The AI took too long to respond. Please try again.' : AI_BUSY,
     );
   } finally {
     clearTimeout(timer);
@@ -86,7 +94,8 @@ export const generateContent = async ({
 
   if (!res.ok) {
     if (res.status === 429) throw quotaError(await safeJson(res));
-    throw ApiError.badGateway(`AI provider error (${res.status})`);
+    logger.warn({ status: res.status, scope: 'generateContent' }, 'Gemini provider error');
+    throw ApiError.badGateway(providerErrorMessage(res.status));
   }
 
   const data = await res.json();
@@ -109,13 +118,20 @@ export const generateContent = async ({
     .join('')
     .trim();
 
-  if (!text) throw ApiError.badGateway('The AI returned an empty response');
+  if (!text) {
+    logger.warn({ scope: 'generateContent' }, 'Gemini returned an empty response');
+    throw ApiError.badGateway(AI_RETRY);
+  }
   if (!json) return text;
 
   try {
     return JSON.parse(text);
   } catch {
-    throw ApiError.badGateway('The AI returned malformed data');
+    logger.warn(
+      { scope: 'generateContent', finishReason: finish, preview: text.slice(0, 200) },
+      'Gemini returned non-JSON output',
+    );
+    throw ApiError.badGateway(AI_RETRY);
   }
 };
 
@@ -144,12 +160,14 @@ export async function* generateContentStream({
     });
   } catch (err) {
     if (err.name === 'AbortError') return;
-    throw ApiError.badGateway('Could not reach the AI provider');
+    logger.warn({ scope: 'generateContentStream', cause: err.name }, 'Gemini stream request failed');
+    throw ApiError.badGateway(AI_BUSY);
   }
 
   if (!res.ok) {
     if (res.status === 429) throw quotaError(await safeJson(res));
-    throw ApiError.badGateway(`AI provider error (${res.status})`);
+    logger.warn({ status: res.status, scope: 'generateContentStream' }, 'Gemini provider error');
+    throw ApiError.badGateway(providerErrorMessage(res.status));
   }
 
   const decoder = new TextDecoder();
@@ -196,8 +214,9 @@ const embedOne = async (text, taskType) => {
       signal: controller.signal,
     });
   } catch (err) {
+    logger.warn({ scope: 'embed', cause: err.name }, 'Embedding request failed');
     throw ApiError.badGateway(
-      err.name === 'AbortError' ? 'Embedding request timed out' : 'Could not reach the AI provider',
+      err.name === 'AbortError' ? 'The AI took too long to respond. Please try again.' : AI_BUSY,
     );
   } finally {
     clearTimeout(timer);
@@ -205,13 +224,15 @@ const embedOne = async (text, taskType) => {
 
   if (!res.ok) {
     if (res.status === 429) throw quotaError(await safeJson(res));
-    throw ApiError.badGateway(`Embedding provider error (${res.status})`);
+    logger.warn({ status: res.status, scope: 'embed' }, 'Embedding provider error');
+    throw ApiError.badGateway(providerErrorMessage(res.status));
   }
 
   const data = await res.json();
   const values = data.embedding?.values;
   if (!Array.isArray(values)) {
-    throw ApiError.badGateway('Embedding provider returned an unexpected response');
+    logger.warn({ scope: 'embed' }, 'Embedding provider returned an unexpected response');
+    throw ApiError.badGateway(AI_RETRY);
   }
   return values;
 };

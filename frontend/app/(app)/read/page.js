@@ -112,15 +112,26 @@ export default function ReadPage() {
   };
 
   if (!data) {
+    const examples = [
+      'https://github.com/vercel/next.js',
+      'https://github.com/facebook/react',
+      'https://github.com/tailwindlabs/tailwindcss',
+    ];
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-semibold tracking-tight">Read a repository</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Paste a public GitHub repo URL to read its docs — rendered with syntax highlighting,
-          diagrams, math, and callouts.
+      <main className="mx-auto flex max-w-2xl flex-col items-center px-6 py-20 text-center">
+        <span className="rm-chip rm-rise">
+          <span className="rm-node-dot" aria-hidden /> Repository reader
+        </span>
+        <h1 className="rm-rise mt-5 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+          Read the <span className="text-gradient">mesh</span> of any repo
+        </h1>
+        <p className="rm-rise-2 mt-3 max-w-md text-muted-foreground">
+          Paste a public GitHub URL. readmesh renders its docs with syntax highlighting, diagrams,
+          math and callouts — then lets AI explain the whole thing.
         </p>
+
         <form
-          className="mt-6 flex gap-2"
+          className="rm-rise-2 mt-8 flex w-full max-w-xl flex-col gap-2 sm:flex-row"
           onSubmit={(e) => {
             e.preventDefault();
             if (url.trim()) repo.mutate({ url: url.trim() });
@@ -131,12 +142,39 @@ export default function ReadPage() {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://github.com/owner/repo"
             aria-label="GitHub repository URL"
+            className="h-11 flex-1 text-center sm:text-left"
           />
-          <Button type="submit" disabled={repo.isPending}>
-            {repo.isPending ? 'Loading…' : 'Load'}
+          <Button type="submit" size="lg" disabled={repo.isPending}>
+            {repo.isPending ? 'Loading…' : 'Explore'}
           </Button>
         </form>
-        {error && <p className="mt-4 text-sm text-destructive">{error.message}</p>}
+
+        <div className="rm-rise-3 mt-4 flex flex-wrap items-center justify-center gap-2">
+          <span className="text-xs text-muted-foreground">Try</span>
+          {examples.map((ex) => (
+            <button
+              key={ex}
+              type="button"
+              onClick={() => {
+                setUrl(ex);
+                repo.mutate({ url: ex });
+              }}
+              className="rounded-full border border-border/70 bg-card/40 px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-brand-violet/50 hover:text-foreground"
+            >
+              {ex.replace('https://github.com/', '')}
+            </button>
+          ))}
+        </div>
+
+        {repo.isPending && (
+          <div className="rm-panel mt-10 w-full space-y-3 p-6 text-left">
+            <div className="rm-skeleton h-6 w-1/3" />
+            <div className="rm-skeleton h-4 w-2/3" />
+            <div className="rm-skeleton h-4 w-1/2" />
+            <div className="rm-skeleton mt-4 h-40 w-full" />
+          </div>
+        )}
+        {error && <p className="mt-5 text-sm text-destructive">{error.message}</p>}
       </main>
     );
   }
@@ -155,15 +193,20 @@ export default function ReadPage() {
     <>
       <ReadingProgress />
       <main className="mx-auto max-w-6xl px-4 py-6 lg:px-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="rm-panel mb-5 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
           <div className="min-w-0">
-            <p className="truncate font-semibold">{data.repo.fullName}</p>
+            <p className="truncate font-display font-semibold tracking-tight">{data.repo.fullName}</p>
             {data.repo.description && (
               <p className="truncate text-sm text-muted-foreground">{data.repo.description}</p>
             )}
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              ★ {data.repo.stars} · {data.repo.language ?? 'n/a'}
-            </p>
+            <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="rm-chip py-0.5">★ {data.repo.stars}</span>
+              {data.repo.language && (
+                <span className="rm-chip py-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-cyan" /> {data.repo.language}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <label className="sr-only" htmlFor="branch">
@@ -356,7 +399,7 @@ export default function ReadPage() {
           <div className="absolute inset-0 bg-black/50" onClick={() => setPanel(null)} />
           <div
             className={cn(
-              'absolute inset-y-0 w-72 max-w-[80%] overflow-auto border-border bg-background p-4 shadow-xl',
+              'absolute inset-y-0 w-72 max-w-[80%] overflow-auto border-border bg-popover/90 p-4 shadow-2xl backdrop-blur-2xl',
               panel === 'files' ? 'left-0 border-r' : 'right-0 border-l',
             )}
           >
@@ -377,8 +420,8 @@ export default function ReadPage() {
 
       {aiOpen && active && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setAiOpen(false)} />
-          <div className="absolute inset-y-0 right-0 w-full max-w-md border-l border-border bg-background shadow-xl">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAiOpen(false)} />
+          <div className="rm-modal-in absolute inset-y-0 right-0 w-full max-w-md border-l border-border bg-popover/90 shadow-2xl backdrop-blur-2xl">
             <AiPanel
               key={active.path}
               content={previewContent}
@@ -393,8 +436,8 @@ export default function ReadPage() {
 
       {notesOpen && active && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setNotesOpen(false)} />
-          <div className="absolute inset-y-0 right-0 w-full max-w-md border-l border-border bg-background shadow-xl">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setNotesOpen(false)} />
+          <div className="rm-modal-in absolute inset-y-0 right-0 w-full max-w-md border-l border-border bg-popover/90 shadow-2xl backdrop-blur-2xl">
             <AnnotationsPanel
               annotations={annotations.annotations}
               onClose={() => setNotesOpen(false)}

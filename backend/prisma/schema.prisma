@@ -52,6 +52,7 @@ model User {
   authAccounts  AuthAccount[]
   refreshTokens RefreshToken[]
   annotations   Annotation[]
+  documents     Document[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -152,4 +153,21 @@ model Annotation {
   @@index([userId])
   @@index([userId, repoOwner, repoName, repoRef, filePath])
   @@map("annotations")
+}
+
+model Document {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @default(uuid()) @db.Uuid
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title   String
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, updatedAt])
+  @@map("documents")
 }

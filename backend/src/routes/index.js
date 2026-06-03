@@ -7,6 +7,7 @@ import { githubRouter } from '../modules/github/github.route.js';
 import { summaryRouter } from '../modules/summary/summary.route.js';
 import { ragRouter } from '../modules/rag/rag.route.js';
 import { annotationRouter } from '../modules/annotation/annotation.route.js';
+import { documentRouter } from '../modules/document/document.route.js';
 
 export const apiRouter = Router();
 
@@ -17,5 +18,6 @@ apiRouter.use(ROUTES.GITHUB.BASE, githubRouter);
 apiRouter.use(ROUTES.SUMMARY.BASE, summaryRouter);
 apiRouter.use(ROUTES.RAG.BASE, ragRouter);
 apiRouter.use(ROUTES.ANNOTATIONS.BASE, annotationRouter);
+apiRouter.use(ROUTES.DOCUMENTS.BASE, documentRouter);
 
 

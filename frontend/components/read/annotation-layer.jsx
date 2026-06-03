@@ -157,7 +157,7 @@ export function AnnotationLayer({ contentRef, contentKey, doc, annotations, onCr
           style={{ top: Math.max(8, toolbar.top), left: toolbar.left }}
           onMouseDown={(e) => e.preventDefault()} 
         >
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-popover p-1 shadow-xl">
+          <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-popover/90 p-1 shadow-2xl backdrop-blur-xl rm-modal-in">
             {HIGHLIGHT_COLORS.map((color) => (
               <button
                 key={color}
@@ -211,7 +211,7 @@ function MarkPopover({ annotation, top, left, onClose, onDelete }) {
   const Icon = TYPE_ICON[annotation.type] ?? StickyNote;
   return (
     <div
-      className="fixed z-50 w-72 max-w-[calc(100vw-1rem)] -translate-x-1/2 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-xl"
+      className="fixed z-50 w-72 max-w-[calc(100vw-1rem)] -translate-x-1/2 rounded-xl border border-border/80 bg-popover/90 p-3 text-popover-foreground shadow-2xl backdrop-blur-xl rm-modal-in"
       style={{ top: Math.min(top, window.innerHeight - 160), left }}
     >
       <div className="mb-1.5 flex items-center justify-between">

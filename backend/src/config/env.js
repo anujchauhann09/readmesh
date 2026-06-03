@@ -37,7 +37,7 @@ const envSchema = z.object({
   PINECONE_HOST: z.string().optional(),
 });
 
-const GEMINI_MODEL_DEFAULT = 'gemini-2.0-flash';
+const GEMINI_MODEL_DEFAULT = 'gemini-2.5-flash';
 
 const parsed = envSchema.safeParse(process.env);
 

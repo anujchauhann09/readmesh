@@ -27,7 +27,13 @@ const setCaret = (ta, start, end) => {
   });
 };
 
-export function MarkdownEditor({ value, onChange, className, minHeight = '24rem' }) {
+export function MarkdownEditor({
+  value,
+  onChange,
+  className,
+  minHeight = '24rem',
+  allowImagePaste = true,
+}) {
   const ref = useRef(null);
   const dialog = useDialog();
 
@@ -131,6 +137,7 @@ export function MarkdownEditor({ value, onChange, className, minHeight = '24rem'
   };
 
   const onPaste = (e) => {
+    if (!allowImagePaste) return;
     const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith('image/'));
     const file = item?.getAsFile();
     if (!file) return;

@@ -33,7 +33,9 @@ export function RepoChat({ url, repoRef }) {
       <div className="min-h-0 flex-1 space-y-3 overflow-auto">
         {messages.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <Sparkles className="h-6 w-6 text-muted-foreground" />
+            <span className="grid h-11 w-11 place-items-center rounded-2xl border border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan">
+              <Sparkles className="h-5 w-5" />
+            </span>
             <p className="max-w-[16rem] text-sm text-muted-foreground">
               Ask anything about this repository. Answers are grounded in its docs, with sources.
             </p>
@@ -43,7 +45,7 @@ export function RepoChat({ url, repoRef }) {
                   key={s}
                   type="button"
                   onClick={() => send(s)}
-                  className="rounded-md border border-border px-2.5 py-1.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                  className="rounded-lg border border-border/70 bg-card/40 px-2.5 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-brand-violet/50 hover:text-foreground"
                 >
                   {s}
                 </button>
@@ -109,7 +111,6 @@ function Message({ message }) {
     return <p className="text-sm text-destructive">{message.content}</p>;
   }
 
-  // Assistant: before the first token arrives, show a searching indicator.
   if (message.streaming && !message.content) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -46,7 +46,19 @@ export const ROUTES = Object.freeze({
     ROOT: '/',
     BY_ID: '/:id',
   }),
+  DOCUMENTS: Object.freeze({
+    BASE: '/documents',
+    ROOT: '/',
+    BY_ID: '/:id',
+  }),
 });
+
+export const DOCUMENT_LIMITS = Object.freeze({
+  TITLE_MAX: 200,
+  CONTENT_MAX: 1_000_000,
+});
+
+export const DEFAULT_DOCUMENT_TITLE = 'Untitled document';
 
 export const THEMES = Object.freeze([
   'system',

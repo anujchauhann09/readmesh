@@ -31,7 +31,7 @@ export function ReadingProgress() {
   return (
     <div className="fixed inset-x-0 top-0 z-50 h-0.5">
       <div
-        className="h-full bg-primary transition-[width] duration-75"
+        className="h-full bg-gradient-to-r from-brand-violet to-brand-cyan shadow-[0_0_12px_hsl(var(--brand-violet)/0.7)] transition-[width] duration-75"
         style={{ width: `${progress}%` }}
         role="progressbar"
         aria-label="Reading progress"

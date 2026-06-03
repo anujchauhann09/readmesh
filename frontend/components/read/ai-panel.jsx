@@ -39,9 +39,14 @@ export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold">AI Assistant</p>
-          {repoName && <p className="truncate text-xs text-muted-foreground">{repoName}</p>}
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-brand-violet/40 bg-brand-violet/10 text-brand-violet">
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">AI Assistant</p>
+            {repoName && <p className="truncate text-xs text-muted-foreground">{repoName}</p>}
+          </div>
         </div>
         <button
           type="button"
@@ -62,8 +67,8 @@ export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
             className={cn(
               'flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
               tab === key
-                ? 'bg-accent text-foreground'
-                : 'text-muted-foreground hover:bg-accent/50',
+                ? 'border border-brand-violet/40 bg-brand-violet/10 text-foreground'
+                : 'border border-transparent text-muted-foreground hover:bg-accent/50',
             )}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -151,8 +156,6 @@ export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
   );
 }
 
-// Renders the four states of a single AI action: idle (explicit Generate),
-// loading, error (retry), success (result + Regenerate).
 function Feature({ mutation, idleHint, generateLabel = 'Generate', onGenerate, children }) {
   if (mutation.isPending) return <Loading />;
 
@@ -183,12 +186,14 @@ function Feature({ mutation, idleHint, generateLabel = 'Generate', onGenerate, c
 function IdleView({ hint, label, onGenerate }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-      <Sparkles className="h-6 w-6 text-muted-foreground" />
+      <span className="grid h-12 w-12 place-items-center rounded-2xl border border-brand-violet/30 bg-brand-violet/10 text-brand-violet rm-float">
+        <Sparkles className="h-6 w-6" />
+      </span>
       <p className="max-w-[16rem] text-sm text-muted-foreground">{hint}</p>
       <button
         type="button"
         onClick={onGenerate}
-        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground shadow-[0_8px_24px_-10px_hsl(var(--brand-violet)/0.7)] transition-all hover:bg-primary/90 active:scale-[0.98]"
       >
         <Sparkles className="h-3.5 w-3.5" /> {label}
       </button>
