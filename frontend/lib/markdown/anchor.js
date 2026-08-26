@@ -1,3 +1,5 @@
+import { clearMarks, textSegments } from './decorations.js';
+
 const CONTEXT = 32;
 
 const offsetWithin = (root, container, offset) => {
@@ -59,14 +61,9 @@ const locate = (full, anchor) => {
 
 const ATTR = 'data-annot-id';
 
+/** Removes annotation marks only — search marks nested inside them survive. */
 export const clearAnnotations = (root) => {
-  if (!root) return;
-  root.querySelectorAll(`mark[${ATTR}]`).forEach((mark) => {
-    const parent = mark.parentNode;
-    if (!parent) return;
-    parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
-    parent.normalize();
-  });
+  clearMarks(root, ATTR);
 };
 
 const typeClass = (type) => {
@@ -76,19 +73,7 @@ const typeClass = (type) => {
 };
 
 const wrapSpan = (root, start, end, { id, type, color, body }) => {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode: (n) => (n.nodeValue ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
-  });
-  const segments = [];
-  let pos = 0;
-  let node = walker.nextNode();
-  while (node) {
-    const len = node.nodeValue.length;
-    segments.push({ node, start: pos, end: pos + len });
-    pos += len;
-    node = walker.nextNode();
-  }
-
+  const segments = textSegments(root);
   const marks = [];
   for (const seg of segments) {
     if (seg.end <= start || seg.start >= end) continue;

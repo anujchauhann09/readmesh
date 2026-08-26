@@ -16,16 +16,12 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { deriveDocumentTitle } from '@readmesh/shared';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useDocSearch } from '@/hooks/use-doc-search';
 import { useDocuments, useDocumentAutosave } from '@/hooks/use-documents';
 import { useDialog } from '@/providers/dialog-provider';
 import { cn } from '@/lib/utils';
-
-const titleFromMarkdown = (md = '') => {
-  const m = md.match(/^#\s+(.+)$/m);
-  return m ? m[1].trim() : 'Untitled document';
-};
 
 const STATUS = {
   idle: { label: 'Saved', tone: 'text-muted-foreground', dot: 'bg-brand-cyan' },
@@ -40,7 +36,7 @@ export default function EditorDocumentPage() {
   const id = params?.id;
   const dialog = useDialog();
 
-  const { documents, create, remove } = useDocuments();
+  const { documents, create, remove, hasMore, loadMore, isLoadingMore } = useDocuments();
   const { document: doc, isLoading, isError, status, save } = useDocumentAutosave(id);
 
   const [source, setSource] = useState(null);
@@ -54,7 +50,8 @@ export default function EditorDocumentPage() {
 
   const preview = useDebouncedValue(source ?? '', 150);
   const search = useDocSearch(previewRef, preview);
-  const title = useMemo(() => titleFromMarkdown(source ?? ''), [source]);
+  // The same helper the server titles the saved document with.
+  const title = useMemo(() => deriveDocumentTitle(source ?? ''), [source]);
 
   const onChange = (val) => {
     setSource(val);
@@ -127,6 +124,19 @@ export default function EditorDocumentPage() {
                   {d.id === id && <Check className="h-3.5 w-3.5 shrink-0 text-brand-violet" />}
                 </DropdownMenuItem>
               ))}
+              {/* Collections are paged, so the switcher offers the rest rather
+                  than pretending the first page is everything. */}
+              {hasMore && (
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    loadMore();
+                  }}
+                  className="justify-center text-xs text-muted-foreground"
+                >
+                  {isLoadingMore ? 'Loading…' : 'Load more documents'}
+                </DropdownMenuItem>
+              )}
               {documents.length > 0 && <DropdownMenuSeparator />}
               <DropdownMenuItem onSelect={newDocument} className="text-brand-violet">
                 <Plus className="mr-2 h-4 w-4" /> New document

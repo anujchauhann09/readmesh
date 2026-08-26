@@ -1,51 +1,42 @@
-import { DEFAULT_DOCUMENT_TITLE, DOCUMENT_LIMITS } from '@readmesh/shared';
+import { deriveDocumentTitle } from '@readmesh/shared';
 import { ApiError } from '../../common/ApiError.js';
+import { requireInternalUserId } from '../user/user.access.js';
+import { toPage } from '../../utils/pagination.js';
 import * as repo from './document.repository.js';
 import { toPublicDocument, toPublicDocumentSummary } from './document.mapper.js';
 
-const requireUserId = async (publicUserId) => {
-  const userId = await repo.resolveUserId(publicUserId);
-  if (!userId) throw ApiError.notFound('User not found');
-  return userId;
-};
-
-const deriveTitle = (content = '') => {
-  const match = content.match(/^#\s+(.+)$/m);
-  const title = match ? match[1].trim() : '';
-  return (title || DEFAULT_DOCUMENT_TITLE).slice(0, DOCUMENT_LIMITS.TITLE_MAX);
-};
-
 export const createDocument = async (publicUserId, { content = '' }) => {
-  const userId = await requireUserId(publicUserId);
-  const created = await repo.create(userId, { title: deriveTitle(content), content });
+  const userId = await requireInternalUserId(publicUserId);
+  const created = await repo.create(userId, { title: deriveDocumentTitle(content), content });
   return toPublicDocument(created);
 };
 
-export const listDocuments = async (publicUserId) => {
-  const userId = await requireUserId(publicUserId);
-  const rows = await repo.listForUser(userId);
-  return rows.map(toPublicDocumentSummary);
+export const listDocuments = async (publicUserId, { limit, cursor }) => {
+  const userId = await requireInternalUserId(publicUserId);
+  const rows = await repo.listForUser(userId, { limit, cursor });
+  const { items, meta } = toPage(rows, { limit });
+  return { documents: items.map(toPublicDocumentSummary), meta };
 };
 
 export const getDocument = async (publicUserId, publicId) => {
-  const userId = await requireUserId(publicUserId);
+  const userId = await requireInternalUserId(publicUserId);
   const doc = await repo.getOwned(publicId, userId);
   if (!doc) throw ApiError.notFound('Document not found');
   return toPublicDocument(doc);
 };
 
 export const updateDocument = async (publicUserId, publicId, { content }) => {
-  const userId = await requireUserId(publicUserId);
+  const userId = await requireInternalUserId(publicUserId);
   const updated = await repo.updateOwned(publicId, userId, {
     content,
-    title: deriveTitle(content),
+    title: deriveDocumentTitle(content),
   });
   if (!updated) throw ApiError.notFound('Document not found');
   return toPublicDocument(updated);
 };
 
 export const deleteDocument = async (publicUserId, publicId) => {
-  const userId = await requireUserId(publicUserId);
+  const userId = await requireInternalUserId(publicUserId);
   const removed = await repo.deleteOwned(publicId, userId);
   if (!removed) throw ApiError.notFound('Document not found');
 };

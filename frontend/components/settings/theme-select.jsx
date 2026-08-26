@@ -1,30 +1,21 @@
 'use client';
 
-import { useState } from 'react';
 import { useTheme } from 'next-themes';
 import { THEMES } from '@readmesh/shared';
 import { useProfile } from '@/hooks/use-profile';
+import { THEME_LABELS } from '@/lib/theme';
 
-const LABELS = {
-  system: 'System',
-  light: 'Light',
-  dark: 'Dark',
-  github: 'GitHub',
-  dracula: 'Dracula',
-  nord: 'Nord',
-  vscode: 'VS Code',
-};
-
-export function ThemeSelect({ current = 'system' }) {
-  const { setTheme } = useTheme();
+export function ThemeSelect() {
+  // Reads straight from next-themes rather than seeding local state from a prop:
+  // the old copy never resynced, so changing the theme from the reader's menu left
+  // this select showing the previous value.
+  const { theme, setTheme } = useTheme();
   const { updatePreferences } = useProfile();
-  const [value, setValue] = useState(current);
 
   const onChange = (event) => {
-    const theme = event.target.value;
-    setValue(theme);
-    setTheme(theme);
-    updatePreferences.mutate({ theme });
+    const next = event.target.value;
+    setTheme(next);
+    updatePreferences.mutate({ theme: next });
   };
 
   return (
@@ -34,13 +25,13 @@ export function ThemeSelect({ current = 'system' }) {
       </label>
       <select
         id="theme"
-        value={value}
+        value={theme ?? 'system'}
         onChange={onChange}
         className="flex h-9 w-full max-w-xs rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
-        {THEMES.map((theme) => (
-          <option key={theme} value={theme}>
-            {LABELS[theme] ?? theme}
+        {THEMES.map((t) => (
+          <option key={t} value={t}>
+            {THEME_LABELS[t] ?? t}
           </option>
         ))}
       </select>

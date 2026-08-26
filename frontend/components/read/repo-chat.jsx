@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Send, Sparkles, Square } from 'lucide-react';
+import { Loader2, Send, Sparkles, Square, SquarePen } from 'lucide-react';
 import { useRepoChat } from '@/hooks/use-repo-chat';
 import { Markdown } from '@/components/markdown/markdown';
+import { linkCitations } from '@/lib/markdown/citations';
 
 const SUGGESTIONS = [
   'How do I run this project?',
@@ -12,8 +13,13 @@ const SUGGESTIONS = [
   'Which database does it use?',
 ];
 
-export function RepoChat({ url, repoRef }) {
-  const { messages, send, stop, isPending } = useRepoChat({ url, ref: repoRef });
+export function RepoChat({ url, repoRef, owner, name, onQuestionAsked }) {
+  const { messages, send, stop, reset, isPending, isRestoring } = useRepoChat({
+    url,
+    ref: repoRef,
+    owner,
+    name,
+  });
   const [input, setInput] = useState('');
   const endRef = useRef(null);
 
@@ -21,17 +27,43 @@ export function RepoChat({ url, repoRef }) {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const ask = (question) => {
+    send(question);
+    onQuestionAsked?.();
+  };
+
   const submit = (e) => {
     e.preventDefault();
     if (!input.trim() || isPending) return;
-    send(input);
+    ask(input);
     setInput('');
   };
 
   return (
     <div className="flex h-full flex-col">
-      <div className="min-h-0 flex-1 space-y-3 overflow-auto">
-        {messages.length === 0 && (
+      {messages.length > 0 && (
+        <div className="mb-2 flex shrink-0 justify-end">
+          <button
+            type="button"
+            onClick={reset}
+            disabled={isPending}
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+          >
+            <SquarePen className="h-3.5 w-3.5" /> New chat
+          </button>
+        </div>
+      )}
+
+      <div
+        className="min-h-0 flex-1 space-y-3 overflow-auto"
+        aria-live="polite"
+        aria-busy={isPending || isRestoring}
+      >
+        {isRestoring && (
+          <p className="py-6 text-center text-sm text-muted-foreground">Loading conversation…</p>
+        )}
+
+        {!isRestoring && messages.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <span className="grid h-11 w-11 place-items-center rounded-2xl border border-brand-cyan/30 bg-brand-cyan/10 text-brand-cyan">
               <Sparkles className="h-5 w-5" />
@@ -44,7 +76,7 @@ export function RepoChat({ url, repoRef }) {
                 <button
                   key={s}
                   type="button"
-                  onClick={() => send(s)}
+                  onClick={() => ask(s)}
                   className="rounded-lg border border-border/70 bg-card/40 px-2.5 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-brand-violet/50 hover:text-foreground"
                 >
                   {s}
@@ -60,8 +92,15 @@ export function RepoChat({ url, repoRef }) {
         <div ref={endRef} />
       </div>
 
-      <form onSubmit={submit} className="mt-3 flex shrink-0 items-end gap-2 border-t border-border pt-3">
+      <form
+        onSubmit={submit}
+        className="mt-3 flex shrink-0 items-end gap-2 border-t border-border pt-3"
+      >
+        <label htmlFor="repo-chat-input" className="sr-only">
+          Ask about this repository
+        </label>
         <textarea
+          id="repo-chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -75,7 +114,7 @@ export function RepoChat({ url, repoRef }) {
           <button
             type="button"
             onClick={stop}
-            aria-label="Stop"
+            aria-label="Stop generating"
             title="Stop generating"
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border hover:bg-accent"
           >
@@ -122,17 +161,12 @@ function Message({ message }) {
   return <AssistantMessage message={message} />;
 }
 
-const citationContent = (content, sources) => {
-  const valid = new Set((sources ?? []).map((s) => s.number));
-  return content.replace(/\[(\d+)\]/g, (match, n) =>
-    valid.has(Number(n)) ? `[\\[${n}\\]](#cite-${n})` : match,
-  );
-};
-
 function AssistantMessage({ message }) {
   const rootRef = useRef(null);
   const sources = message.sources ?? [];
 
+  // Delegated so every citation link in the rendered Markdown is covered without
+  // threading a handler through the renderer.
   const onClick = (e) => {
     const link = e.target.closest('a[href^="#cite-"]');
     if (!link) return;
@@ -146,9 +180,14 @@ function AssistantMessage({ message }) {
   };
 
   return (
-    <div ref={rootRef} className="rounded-lg border border-border bg-muted/30 px-3 py-2" onClick={onClick}>
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+    <div
+      ref={rootRef}
+      className="rounded-lg border border-border bg-muted/30 px-3 py-2"
+      onClick={onClick}
+    >
       <div className="text-sm">
-        <Markdown content={citationContent(message.content, sources)} />
+        <Markdown content={linkCitations(message.content, sources)} />
       </div>
       {sources.length > 0 && (
         <div className="mt-2 border-t border-border pt-2">

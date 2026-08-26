@@ -3,7 +3,6 @@ import { sendSuccess } from '../../common/ApiResponse.js';
 import { setAuthCookies, clearAuthCookies, REFRESH_COOKIE } from '../../utils/cookies.js';
 import * as authService from './auth.service.js';
 
-
 const contextOf = (req) => ({
   userAgent: req.headers['user-agent'],
   ipAddress: req.ip,
@@ -39,4 +38,16 @@ export const logout = asyncHandler(async (req, res) => {
 export const me = asyncHandler(async (req, res) => {
   const user = await authService.getCurrentUser(req.user.publicId);
   sendSuccess(res, { data: { user } });
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { message } = await authService.requestPasswordReset(req.validated.body, contextOf(req));
+  sendSuccess(res, { message, data: null });
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { user } = await authService.resetPassword(req.validated.body);
+  // Every session was revoked as part of the reset, so the caller signs in fresh.
+  clearAuthCookies(res);
+  sendSuccess(res, { message: 'Password updated — please sign in', data: { user } });
 });

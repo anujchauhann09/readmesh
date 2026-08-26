@@ -1,6 +1,7 @@
 import { config } from '../../config/env.js';
 import { ApiError } from '../../common/ApiError.js';
 import * as userRepo from '../user/user.repository.js';
+import { assertAccountUsable } from '../user/user.guards.js';
 import { getGoogleUser, getGithubUser } from './oauth.providers.js';
 
 const DEFAULT_ROLE = 'developer';
@@ -45,11 +46,21 @@ export const authenticateWithProvider = async (provider, code) => {
     throw ApiError.unauthorized('Could not read your profile from that provider.');
   }
 
+  // Already linked: identity is proven by the provider account id, not the email.
   const linked = await userRepo.findByProviderAccount(p.enum, profile.providerUserId);
-  if (linked) return linked;
+  if (linked) return assertAccountUsable(linked);
 
   const byEmail = await userRepo.findByEmailWithSecret(profile.email);
   if (byEmail) {
+    // Matching on email alone is a takeover path: whoever controls an *unverified*
+    // address at the provider would be handed the existing readmesh account. Only
+    // a provider-verified address is allowed to claim one.
+    if (!profile.emailVerified) {
+      throw ApiError.unauthorized(
+        'That email is already registered. Verify it with your provider, or sign in with your password.',
+      );
+    }
+    assertAccountUsable(byEmail);
     return userRepo.linkAuthAccount(byEmail.publicId, {
       provider: p.enum,
       providerAccountId: profile.providerUserId,

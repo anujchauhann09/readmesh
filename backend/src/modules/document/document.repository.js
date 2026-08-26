@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
+import { toPrismaPage } from '../../utils/pagination.js';
 
 const FULL = {
   publicId: true,
@@ -15,22 +16,17 @@ const SUMMARY = {
   updatedAt: true,
 };
 
-export const resolveUserId = async (publicId) => {
-  const user = await prisma.user.findFirst({
-    where: { publicId, deletedAt: null },
-    select: { id: true },
-  });
-  return user?.id ?? null;
-};
-
 export const create = (userId, data) =>
   prisma.document.create({ data: { ...data, userId }, select: FULL });
 
-export const listForUser = (userId) =>
+export const listForUser = (userId, page) =>
   prisma.document.findMany({
     where: { userId },
     select: SUMMARY,
-    orderBy: { updatedAt: 'desc' },
+    // `id` breaks ties so the cursor walks a total order even when several
+    // documents share an `updatedAt`.
+    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    ...toPrismaPage(page),
   });
 
 export const getOwned = (publicId, userId) =>

@@ -1,6 +1,6 @@
 const RAW_BASE = 'https://raw.githubusercontent.com';
 
-const stripBom = (s) => s.replace(/^﻿/, '');
+const stripBom = (s) => s.replace(/^\uFEFF/, '');
 const normalizeNewlines = (s) => s.replace(/\r\n?/g, '\n');
 
 const dirname = (p) => {
@@ -19,7 +19,6 @@ const resolveRelative = (baseDir, rel) => {
 };
 
 const isExternal = (url) => /^(https?:)?\/\//i.test(url) || /^(data:|mailto:|tel:|#)/i.test(url);
-
 
 export const normalizeMarkdown = (content, { owner, repo, ref, filePath = '' }) => {
   let text = normalizeNewlines(stripBom(content)).replace(/[ \t]+$/gm, '');

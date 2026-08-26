@@ -8,8 +8,11 @@ export const create = asyncHandler(async (req, res) => {
 });
 
 export const list = asyncHandler(async (req, res) => {
-  const documents = await documentService.listDocuments(req.user.publicId);
-  sendSuccess(res, { data: { documents } });
+  const { documents, meta } = await documentService.listDocuments(
+    req.user.publicId,
+    req.validated.query,
+  );
+  sendSuccess(res, { data: { documents }, meta });
 });
 
 export const get = asyncHandler(async (req, res) => {

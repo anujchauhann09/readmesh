@@ -1,0 +1,12 @@
+# readmesh — the marketing surface is indexable; signed-in workspace routes are not.
+User-agent: *
+Allow: /$
+Allow: /login
+Allow: /register
+Disallow: /dashboard
+Disallow: /editor
+Disallow: /read
+Disallow: /profile
+Disallow: /settings
+Disallow: /oauth
+Disallow: /health

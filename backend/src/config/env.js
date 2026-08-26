@@ -1,10 +1,36 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+/** Splits a comma-separated env value into a trimmed, de-duplicated list. */
+const csv = (value) => [
+  ...new Set(
+    String(value)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  ),
+];
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8080),
+  /** One origin, or several separated by commas. */
   CORS_ORIGIN: z.string().min(1).default('http://localhost:3000'),
+  /**
+   * Number of reverse proxies in front of the API, or `false` when it is exposed
+   * directly. Trusting a proxy that is not there lets clients forge
+   * `X-Forwarded-For` and sidestep the rate limiter, so this is explicit.
+   */
+  TRUST_PROXY: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === '') return undefined;
+      if (v === 'false') return false;
+      if (v === 'true') return true;
+      const hops = Number(v);
+      return Number.isInteger(hops) && hops >= 0 ? hops : v;
+    }),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
@@ -12,6 +38,8 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL: z.string().default('7d'),
+  JWT_ISSUER: z.string().default('readmesh'),
+  JWT_AUDIENCE: z.string().default('readmesh-api'),
 
   COOKIE_SECURE: z
     .enum(['true', 'false'])
@@ -29,6 +57,19 @@ const envSchema = z.object({
   GOOGLE_CALLBACK_URL: z.string().optional(),
 
   GITHUB_PAT: z.string().optional(),
+  /**
+   * Serving private repositories is off by default: the server PAT can usually
+   * read more than the signed-in user should, so opening that door is opt-in.
+   */
+  ALLOW_PRIVATE_REPOS: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+
+  /** Outbound email. With no driver configured, reset links are written to the log. */
+  MAIL_DRIVER: z.enum(['log', 'smtp']).default('log'),
+  MAIL_FROM: z.string().default('readmesh <no-reply@readmesh.app>'),
+  SMTP_URL: z.string().optional(),
 
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().optional(),
@@ -54,13 +95,27 @@ if (!parsed.success) {
 
 const env = parsed.data;
 
-export const config = Object.freeze({
+const corsOrigins = csv(env.CORS_ORIGIN);
+
+/** Recursively freezes a config tree so nothing can mutate it at runtime. */
+const deepFreeze = (value) => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    Object.values(value).forEach(deepFreeze);
+  }
+  return value;
+};
+
+export const config = deepFreeze({
   env: env.NODE_ENV,
   isProd: env.NODE_ENV === 'production',
   isDev: env.NODE_ENV === 'development',
+  isTest: env.NODE_ENV === 'test',
   server: {
     port: env.PORT,
-    corsOrigin: env.CORS_ORIGIN,
+    corsOrigins,
+    // Behind Render's single proxy in production; directly exposed in local dev.
+    trustProxy: env.TRUST_PROXY ?? (env.NODE_ENV === 'production' ? 1 : false),
   },
   db: {
     url: env.DATABASE_URL,
@@ -70,13 +125,15 @@ export const config = Object.freeze({
     refreshSecret: env.JWT_REFRESH_SECRET,
     accessTtl: env.ACCESS_TOKEN_TTL,
     refreshTtl: env.REFRESH_TOKEN_TTL,
+    issuer: env.JWT_ISSUER,
+    audience: env.JWT_AUDIENCE,
   },
   cookie: {
     secure: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
     sameSite: env.COOKIE_SAMESITE ?? (env.NODE_ENV === 'production' ? 'none' : 'lax'),
     domain: env.COOKIE_DOMAIN,
   },
-  frontendUrl: env.FRONTEND_URL ?? env.CORS_ORIGIN.split(',')[0].trim(),
+  frontendUrl: env.FRONTEND_URL ?? corsOrigins[0],
   oauth: {
     github: {
       clientId: env.GITHUB_OAUTH_CLIENT_ID,
@@ -91,6 +148,12 @@ export const config = Object.freeze({
   },
   github: {
     pat: env.GITHUB_PAT,
+    allowPrivateRepos: env.ALLOW_PRIVATE_REPOS,
+  },
+  mail: {
+    driver: env.MAIL_DRIVER,
+    from: env.MAIL_FROM,
+    smtpUrl: env.SMTP_URL,
   },
   ai: {
     geminiApiKey: env.GEMINI_API_KEY,

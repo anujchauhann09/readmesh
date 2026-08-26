@@ -38,7 +38,10 @@ const toSections = (markdown) => {
   return sections;
 };
 
-export const chunkMarkdown = (markdown, { target = TARGET_CHARS, overlap = OVERLAP_CHARS } = {}) => {
+export const chunkMarkdown = (
+  markdown,
+  { target = TARGET_CHARS, overlap = OVERLAP_CHARS } = {},
+) => {
   const chunks = [];
   if (!markdown || !markdown.trim()) return chunks;
 

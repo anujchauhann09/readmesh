@@ -1,3 +1,5 @@
+import { clearMarks } from './decorations.js';
+
 const HL_ATTR = 'data-rm-hl';
 const HL_CLASS = 'rm-hl';
 
@@ -14,15 +16,9 @@ const isSkipped = (node, root) => {
   return false;
 };
 
+/** Removes search marks only — annotation marks nested inside them survive. */
 export function clearHighlights(root) {
-  if (!root) return;
-  const marks = root.querySelectorAll(`mark[${HL_ATTR}]`);
-  marks.forEach((mark) => {
-    const parent = mark.parentNode;
-    if (!parent) return;
-    parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
-    parent.normalize();
-  });
+  clearMarks(root, HL_ATTR);
 }
 
 export function applyHighlights(root, query) {

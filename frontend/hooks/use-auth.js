@@ -5,7 +5,6 @@ import { meRequest, loginRequest, registerRequest, logoutRequest } from '@/lib/a
 
 export const AUTH_ME_KEY = ['auth', 'me'];
 
-
 export function useAuth() {
   const queryClient = useQueryClient();
 
@@ -18,11 +17,25 @@ export function useAuth() {
 
   const setUser = (user) => queryClient.setQueryData(AUTH_ME_KEY, user);
 
+  /**
+   * Wipes every cached query on sign-out.
+   *
+   * Only resetting the user left documents, annotations and conversations in the
+   * cache, so signing into a second account in the same tab could briefly render
+   * the previous user's data before the refetches landed.
+   */
+  const endSession = () => {
+    queryClient.clear();
+    setUser(null);
+  };
+
   const login = useMutation({ mutationFn: loginRequest, onSuccess: setUser });
   const register = useMutation({ mutationFn: registerRequest });
   const logout = useMutation({
     mutationFn: logoutRequest,
-    onSuccess: () => setUser(null),
+    // The local session must end even if the server call fails, otherwise the UI
+    // keeps showing a signed-in state the cookies no longer back.
+    onSettled: endSession,
   });
 
   return {
@@ -32,5 +45,6 @@ export function useAuth() {
     login,
     register,
     logout,
+    endSession,
   };
 }

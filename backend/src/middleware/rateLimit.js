@@ -16,7 +16,6 @@ export const apiRateLimiter = createLimiter({
   message: 'Too many requests, please try again later.',
 });
 
-
 export const strictRateLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: 30,

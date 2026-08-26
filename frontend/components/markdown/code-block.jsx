@@ -1,14 +1,46 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { Check, Copy } from 'lucide-react';
 import { highlightCode, shikiThemeFor } from '@/lib/markdown/shiki';
+import { cn } from '@/lib/utils';
 
-export function CodeBlock({ code, lang }) {
+// Below this, numbers are noise rather than navigation.
+const MIN_LINES_FOR_NUMBERS = 3;
+
+/**
+ * Parses the highlight request from a fence's info string.
+ *
+ * ```js {2,5-7}  →  Set { 2, 5, 6, 7 }
+ *
+ * The `{…}` convention is what Shiki, Docusaurus and Nextra all use, so a README
+ * written for any of those renders its emphasis here too.
+ */
+export const parseHighlightedLines = (meta = '') => {
+  const match = /\{([\d,\s-]+)\}/.exec(meta);
+  if (!match) return null;
+
+  const lines = new Set();
+  for (const part of match[1].split(',')) {
+    const range = part.trim();
+    if (!range) continue;
+    const [from, to] = range.split('-').map((n) => Number.parseInt(n, 10));
+    if (!Number.isFinite(from)) continue;
+    const end = Number.isFinite(to) ? to : from;
+    for (let i = from; i <= end && i - from < 500; i += 1) lines.add(i);
+  }
+  return lines.size ? lines : null;
+};
+
+export function CodeBlock({ code, lang, meta = '' }) {
   const { theme, resolvedTheme } = useTheme();
   const [html, setHtml] = useState(null);
   const [copied, setCopied] = useState(false);
+  const containerRef = useRef(null);
+
+  const lineCount = code.split('\n').length;
+  const showNumbers = lineCount >= MIN_LINES_FOR_NUMBERS;
 
   useEffect(() => {
     let cancelled = false;
@@ -19,6 +51,26 @@ export function CodeBlock({ code, lang }) {
       cancelled = true;
     };
   }, [code, lang, theme, resolvedTheme]);
+
+  /**
+   * Decorates Shiki's own `.line` spans after they land in the DOM.
+   *
+   * Numbering via a CSS counter on real line elements keeps the numbers out of the
+   * text layer, so selecting and copying the block still yields just the code.
+   */
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root || !html) return;
+
+    const highlighted = parseHighlightedLines(meta);
+    root.querySelectorAll('.line').forEach((line, index) => {
+      line.setAttribute('data-line', String(index + 1));
+      line.classList.toggle('line--highlighted', Boolean(highlighted?.has(index + 1)));
+    });
+    root.classList.toggle('has-line-numbers', showNumbers);
+    // `dimmed` fades the untouched lines so the emphasis reads as emphasis.
+    root.classList.toggle('has-highlighted-lines', Boolean(highlighted));
+  }, [html, meta, showNumbers]);
 
   const copy = async () => {
     try {
@@ -46,11 +98,12 @@ export function CodeBlock({ code, lang }) {
       </div>
       {html ? (
         <div
+          ref={containerRef}
           className="shiki-container overflow-x-auto text-sm"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       ) : (
-        <pre className="overflow-x-auto p-4 text-sm">
+        <pre className={cn('overflow-x-auto p-4 text-sm')}>
           <code>{code}</code>
         </pre>
       )}

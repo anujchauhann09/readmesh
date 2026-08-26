@@ -6,6 +6,7 @@ import {
   createDocumentSchema,
   updateDocumentSchema,
   documentIdSchema,
+  listDocumentsSchema,
 } from './document.dto.js';
 import { create, list, get, update, remove } from './document.controller.js';
 
@@ -15,7 +16,7 @@ export const documentRouter = Router();
 
 documentRouter.use(authenticate);
 
-documentRouter.get(ROOT, list);
+documentRouter.get(ROOT, validate(listDocumentsSchema), list);
 documentRouter.post(ROOT, validate(createDocumentSchema), create);
 documentRouter.get(BY_ID, validate(documentIdSchema), get);
 documentRouter.patch(BY_ID, validate(updateDocumentSchema), update);

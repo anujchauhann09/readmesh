@@ -5,11 +5,10 @@ import { parseDurationMs } from './duration.js';
 export const ACCESS_COOKIE = 'access_token';
 export const REFRESH_COOKIE = 'refresh_token';
 
-
 const REFRESH_COOKIE_PATH = `${API_PREFIX}${'/auth'}`;
 
 const baseOptions = () => ({
-  httpOnly: true, 
+  httpOnly: true,
   secure: config.cookie.secure,
   sameSite: config.cookie.sameSite,
   ...(config.cookie.domain ? { domain: config.cookie.domain } : {}),
@@ -38,7 +37,11 @@ export const OAUTH_STATE_COOKIE = 'rm_oauth_state';
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 export const setOAuthStateCookie = (res, state) =>
-  res.cookie(OAUTH_STATE_COOKIE, state, { ...baseOptions(), path: '/', maxAge: OAUTH_STATE_TTL_MS });
+  res.cookie(OAUTH_STATE_COOKIE, state, {
+    ...baseOptions(),
+    path: '/',
+    maxAge: OAUTH_STATE_TTL_MS,
+  });
 
 export const clearOAuthStateCookie = (res) =>
   res.clearCookie(OAUTH_STATE_COOKIE, { ...baseOptions(), path: '/' });

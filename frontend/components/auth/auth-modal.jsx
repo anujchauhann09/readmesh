@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, X } from 'lucide-react';
 import { APP_NAME } from '@readmesh/shared';
 import { loginRequest, registerRequest } from '@/lib/api/auth';
 import { AUTH_ME_KEY } from '@/hooks/use-auth';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { LogoMark } from '@/components/brand/logo';
 import { SocialAuth } from '@/components/auth/social-auth';
 import { claimGuestDraft } from '@/lib/documents/claim-draft';
@@ -23,14 +24,9 @@ export function AuthModal({ title, description, onClose, onAuthed }) {
   const [form, setForm] = useState({ email: '', password: '', displayName: '' });
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
+  const panelRef = useRef(null);
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useFocusTrap(panelRef, { onEscape: onClose });
 
   const mutation = useMutation({
     mutationFn: mode === 'register' ? registerRequest : loginRequest,
@@ -65,9 +61,16 @@ export function AuthModal({ title, description, onClose, onAuthed }) {
       <div
         className="absolute inset-0 bg-background/70 backdrop-blur-sm rm-fade-in"
         onClick={onClose}
+        aria-hidden
       />
 
-      <div className="rm-modal-in rm-panel rm-panel-glow relative w-full max-w-md p-6 text-card-foreground">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title || DEFAULT_TITLE}
+        className="rm-modal-in rm-panel rm-panel-glow relative w-full max-w-md p-6 text-card-foreground"
+      >
         <button
           type="button"
           onClick={onClose}

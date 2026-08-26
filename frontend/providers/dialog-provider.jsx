@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
 
 const DialogContext = createContext(null);
@@ -61,20 +62,17 @@ function DialogModal({ kind, options, onCancel, onSubmit }) {
     Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? ''])),
   );
   const firstRef = useRef(null);
+  const panelRef = useRef(null);
+
+  // Escape-to-cancel and focus containment, plus focus returned to whatever
+  // opened the dialog once it closes.
+  useFocusTrap(panelRef, { onEscape: onCancel });
 
   useEffect(() => {
     const el = firstRef.current;
     el?.focus();
     el?.select?.();
   }, []);
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onCancel();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onCancel]);
 
   const submit = (e) => {
     e?.preventDefault();
@@ -90,8 +88,9 @@ function DialogModal({ kind, options, onCancel, onSubmit }) {
       aria-modal="true"
       aria-label={options.title || 'Dialog'}
     >
-      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+      <div className="absolute inset-0 bg-black/50" onClick={onCancel} aria-hidden />
       <form
+        ref={panelRef}
         onSubmit={submit}
         className="relative w-full max-w-md rounded-lg border border-border bg-popover p-5 text-popover-foreground shadow-xl"
       >

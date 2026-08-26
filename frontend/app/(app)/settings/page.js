@@ -33,7 +33,7 @@ export default function SettingsPage() {
         <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Appearance
         </h2>
-        <ThemeSelect current={user.preferences?.theme ?? 'system'} />
+        <ThemeSelect />
       </section>
 
       <section className="rm-rise-3 space-y-3 rounded-[var(--radius)] border border-destructive/30 bg-destructive/5 p-6">

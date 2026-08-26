@@ -25,6 +25,20 @@ enum AnnotationType {
   COMMENT
 }
 
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+enum AnalyticsEventType {
+  REPO_OPENED
+  FILE_OPENED
+  SUMMARY_GENERATED
+  QUESTION_ASKED
+  ANNOTATION_CREATED
+  DOCUMENT_EXPORTED
+}
+
 model Role {
   id          Int      @id @default(autoincrement())
   name        String   @unique
@@ -47,12 +61,16 @@ model User {
   roleId Int
   role   Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
-  profile       UserProfile?
-  preferences   UserPreferences?
-  authAccounts  AuthAccount[]
-  refreshTokens RefreshToken[]
-  annotations   Annotation[]
-  documents     Document[]
+  profile             UserProfile?
+  preferences         UserPreferences?
+  authAccounts        AuthAccount[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  annotations         Annotation[]
+  documents           Document[]
+  savedRepos          SavedRepo[]
+  conversations       Conversation[]
+  analyticsEvents     AnalyticsEvent[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -124,6 +142,24 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+/// Single-use password reset grant. Only the SHA-256 hash of the token is stored,
+/// so a database leak cannot be replayed against the reset endpoint.
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  requestedIp String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
 model Annotation {
   id       Int            @id @default(autoincrement())
   publicId String         @unique @default(uuid()) @db.Uuid
@@ -136,7 +172,9 @@ model Annotation {
   repoRef   String
   filePath  String
 
-  exact        String  @db.Text
+  /// The quoted text a highlight/note is anchored to. Null for section COMMENTs,
+  /// which are anchored by `sectionId` rather than by a text quote.
+  exact        String? @db.Text
   prefix       String? @db.Text
   suffix       String? @db.Text
   textPosition Int?
@@ -170,4 +208,88 @@ model Document {
   @@index([userId])
   @@index([userId, updatedAt])
   @@map("documents")
+}
+
+/// A repository a user bookmarked for quick access from the dashboard.
+model SavedRepo {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @default(uuid()) @db.Uuid
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  owner       String
+  name        String
+  /// Branch/tag the user was reading; null means "whatever is default at open time".
+  ref         String?
+  description String?
+  /// Denormalized so the dashboard can render a card without hitting the GitHub API.
+  stars       Int?
+  language    String?
+
+  lastOpenedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, owner, name])
+  @@index([userId, lastOpenedAt])
+  @@map("saved_repos")
+}
+
+/// One repo-scoped chat thread. Messages hang off it so the AI panel can restore
+/// history and so follow-up questions can be answered with prior turns in context.
+model Conversation {
+  id       Int    @id @default(autoincrement())
+  publicId String @unique @default(uuid()) @db.Uuid
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  repoOwner String
+  repoName  String
+  repoRef   String
+  title     String
+
+  messages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+  @@index([userId, repoOwner, repoName, repoRef])
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             Int          @id @default(autoincrement())
+  publicId       String       @unique @default(uuid()) @db.Uuid
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  role    ChatRole
+  content String   @db.Text
+  /// Retrieved citations for an assistant turn: [{ number, path, heading, score }].
+  sources Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
+}
+
+/// Append-only product analytics. Deliberately narrow: no IPs, no free-text, and
+/// it cascades away with the user so account deletion stays complete.
+model AnalyticsEvent {
+  id     Int                @id @default(autoincrement())
+  userId Int
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   AnalyticsEventType
+
+  repoOwner String?
+  repoName  String?
+  filePath  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@map("analytics_events")
 }

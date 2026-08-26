@@ -8,7 +8,6 @@ import {
 } from '@/lib/api/user';
 import { AUTH_ME_KEY } from '@/hooks/use-auth';
 
-
 export function useProfile() {
   const queryClient = useQueryClient();
 
@@ -25,7 +24,12 @@ export function useProfile() {
 
   const deleteAccount = useMutation({
     mutationFn: deleteAccountRequest,
-    onSuccess: () => queryClient.setQueryData(AUTH_ME_KEY, null),
+    // Same teardown as sign-out: the account is gone, so nothing it owned should
+    // remain readable from the cache.
+    onSuccess: () => {
+      queryClient.clear();
+      queryClient.setQueryData(AUTH_ME_KEY, null);
+    },
   });
 
   return { updateProfile, updatePreferences, deleteAccount };

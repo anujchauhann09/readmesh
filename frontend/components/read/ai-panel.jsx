@@ -28,10 +28,20 @@ const TABS = [
   { key: 'translate', label: 'Translate', icon: Languages },
 ];
 
-const errorMessage = (error) =>
-  error?.response?.data?.error?.message || error?.message || 'Something went wrong.';
+// The API client normalizes failures into real Errors carrying the server's
+// message, so there is no response object left to dig through here.
+const errorMessage = (error) => error?.message || 'Something went wrong.';
 
-export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
+export function AiPanel({
+  content,
+  repoName,
+  repoUrl,
+  repoRef,
+  repoOwner,
+  onClose,
+  onSummaryGenerated,
+  onQuestionAsked,
+}) {
   const [tab, setTab] = useState('chat');
   const [language, setLanguage] = useState(SUMMARY_LANGUAGES[0].code);
   const { tldr, commands, beginner, translate } = useSummary();
@@ -79,7 +89,13 @@ export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
 
       {tab === 'chat' ? (
         <div className="min-h-0 flex-1 p-4">
-          <RepoChat url={repoUrl} repoRef={repoRef} />
+          <RepoChat
+            url={repoUrl}
+            repoRef={repoRef}
+            owner={repoOwner}
+            name={repoName}
+            onQuestionAsked={onQuestionAsked}
+          />
         </div>
       ) : (
       <div className="min-h-0 flex-1 overflow-auto p-4">
@@ -87,7 +103,10 @@ export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
           <Feature
             mutation={tldr}
             idleHint="Generate a TL;DR, key commands, tech stack and highlights for this file."
-            onGenerate={() => tldr.mutate({ content, repoName })}
+            onGenerate={() => {
+              onSummaryGenerated?.();
+              tldr.mutate({ content, repoName });
+            }}
           >
             {(data) => <TldrView summary={data.summary} truncated={data.truncated} />}
           </Feature>
@@ -97,7 +116,10 @@ export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
           <Feature
             mutation={commands}
             idleHint="Extract the runnable commands from this file."
-            onGenerate={() => commands.mutate({ content })}
+            onGenerate={() => {
+              onSummaryGenerated?.();
+              commands.mutate({ content });
+            }}
           >
             {(data) => <CommandList commands={data.commands} />}
           </Feature>
@@ -107,7 +129,10 @@ export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
           <Feature
             mutation={beginner}
             idleHint="Rewrite this file in simple, beginner-friendly English."
-            onGenerate={() => beginner.mutate({ content })}
+            onGenerate={() => {
+              onSummaryGenerated?.();
+              beginner.mutate({ content });
+            }}
           >
             {(data) => (
               <>
@@ -139,7 +164,10 @@ export function AiPanel({ content, repoName, repoUrl, repoRef, onClose }) {
               mutation={translate}
               idleHint="Choose a language above, then translate this file."
               generateLabel="Translate"
-              onGenerate={() => translate.mutate({ content, language })}
+              onGenerate={() => {
+                onSummaryGenerated?.();
+                translate.mutate({ content, language });
+              }}
             >
               {(data) => (
                 <>

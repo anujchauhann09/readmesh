@@ -1,11 +1,19 @@
 import { ApiError } from '../../common/ApiError.js';
+import { config } from '../../config/env.js';
+import { createTtlCache } from '../../utils/ttlCache.js';
 import { parseGithubUrl } from './github.url.js';
-import { apiGet, getRawFile } from './github.client.js';
+import { apiGet, apiGetAllPages, getRawFile } from './github.client.js';
 import { normalizeMarkdown } from './github.normalizer.js';
 
 const MD_RE = /\.(md|mdx|markdown)$/i;
 const README_RE = /^readme\.(md|mdx|markdown)$/i;
 const MAX_FILES = 300;
+const META_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Repository metadata is re-read on every file fetch to enforce the visibility
+// rule, so it is cached briefly. Short enough that a repo flipped to private
+// stops being served within minutes.
+const metaCache = createTtlCache({ ttlMs: META_CACHE_TTL_MS, max: 500 });
 
 const toRepoMeta = (data) => ({
   owner: data.owner?.login,
@@ -19,6 +27,18 @@ const toRepoMeta = (data) => ({
   isPrivate: data.private,
   pushedAt: data.pushed_at,
 });
+
+/**
+ * readmesh is a public-documentation reader. The server's PAT exists to raise the
+ * API rate limit, not to grant callers its access — so unless a deployment opts in
+ * explicitly, a private repository is refused even when the PAT could read it.
+ */
+const assertReadable = (meta) => {
+  if (meta.isPrivate && !config.github.allowPrivateRepos) {
+    throw ApiError.forbidden('Only public repositories can be opened');
+  }
+  return meta;
+};
 
 const rank = (file) => {
   if (README_RE.test(file.path)) return 0;
@@ -44,16 +64,27 @@ const matchBranchRef = (segments, branchNames) => {
 export const resolve = (url) => parseGithubUrl(url);
 
 export const getRepoMeta = async (owner, repo) => {
-  const data = await apiGet(`/repos/${owner}/${repo}`, 'Repository');
-  return toRepoMeta(data);
+  const key = `${owner}/${repo}`.toLowerCase();
+  const cached = metaCache.get(key);
+  if (cached) return assertReadable(cached);
+
+  const meta = toRepoMeta(await apiGet(`/repos/${owner}/${repo}`, 'Repository'));
+  metaCache.set(key, meta);
+  return assertReadable(meta);
 };
 
 export const listBranches = async (owner, repo) => {
-  const data = await apiGet(`/repos/${owner}/${repo}/branches?per_page=100`, 'Repository');
+  const data = await apiGetAllPages(`/repos/${owner}/${repo}/branches?per_page=100`, 'Repository');
   return data.map((b) => b.name);
 };
 
-/** Lists all markdown files (README, docs/**, anywhere) via the git tree. */
+/**
+ * Lists all markdown files (README, docs/**, anywhere) via the git tree.
+ *
+ * The tree's own SHA is returned alongside: it changes whenever any file in the
+ * repo changes, which makes it a cheap content fingerprint for cache invalidation
+ * downstream (the RAG index keys its namespace on it).
+ */
 export const listMarkdownFiles = async (owner, repo, ref) => {
   const data = await apiGet(
     `/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
@@ -70,7 +101,11 @@ export const listMarkdownFiles = async (owner, repo, ref) => {
     .sort((a, b) => rank(a) - rank(b) || a.path.localeCompare(b.path))
     .slice(0, MAX_FILES);
 
-  return { files, truncated: Boolean(data.truncated) || all.length > MAX_FILES };
+  return {
+    files,
+    treeSha: data.sha ?? null,
+    truncated: Boolean(data.truncated) || all.length > MAX_FILES,
+  };
 };
 
 export const getReadme = async (owner, repo, ref) => {
@@ -94,6 +129,9 @@ export const getReadme = async (owner, repo, ref) => {
 
 export const getFileContent = async (owner, repo, ref, filePath) => {
   if (!MD_RE.test(filePath)) throw ApiError.badRequest('Only markdown files can be fetched');
+  // Visibility is enforced per file, not just at repo-open time: this endpoint is
+  // reachable directly with arbitrary coordinates.
+  await getRepoMeta(owner, repo);
   const raw = await getRawFile(owner, repo, ref, filePath, 'File');
   return {
     path: filePath,
@@ -111,10 +149,7 @@ export const loadRepo = async (url, refOverride) => {
 
   // Branches are needed both for the response and to disambiguate a slashed ref
   // from a tree/blob URL, so fetch them (with metadata) before the ref-scoped calls.
-  const [meta, branches] = await Promise.all([
-    getRepoMeta(owner, repo),
-    listBranches(owner, repo),
-  ]);
+  const [meta, branches] = await Promise.all([getRepoMeta(owner, repo), listBranches(owner, repo)]);
 
   const ref =
     refOverride ||
@@ -127,5 +162,13 @@ export const loadRepo = async (url, refOverride) => {
     getReadme(owner, repo, ref),
   ]);
 
-  return { repo: meta, ref, branches, readme, docs: docs.files, docsTruncated: docs.truncated };
+  return {
+    repo: meta,
+    ref,
+    branches,
+    readme,
+    docs: docs.files,
+    docsTruncated: docs.truncated,
+    treeSha: docs.treeSha,
+  };
 };

@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
+import { toPrismaPage } from '../../utils/pagination.js';
 
 const SELECT = {
   publicId: true,
@@ -19,18 +20,10 @@ const SELECT = {
   updatedAt: true,
 };
 
-export const resolveUserId = async (publicId) => {
-  const user = await prisma.user.findFirst({
-    where: { publicId, deletedAt: null },
-    select: { id: true },
-  });
-  return user?.id ?? null;
-};
-
 export const create = (userId, data) =>
   prisma.annotation.create({ data: { ...data, userId }, select: SELECT });
 
-export const listForUser = (userId, { repoOwner, repoName, repoRef, filePath }) =>
+export const listForUser = (userId, { repoOwner, repoName, repoRef, filePath }, page) =>
   prisma.annotation.findMany({
     where: {
       userId,
@@ -40,7 +33,10 @@ export const listForUser = (userId, { repoOwner, repoName, repoRef, filePath }) 
       ...(filePath ? { filePath } : {}),
     },
     select: SELECT,
-    orderBy: { createdAt: 'asc' },
+    // `id` breaks ties so the ordering is total — a cursor over a non-unique sort
+    // key can otherwise skip or repeat rows created in the same millisecond.
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    ...toPrismaPage(page),
   });
 
 export const updateOwned = async (publicId, userId, data) => {

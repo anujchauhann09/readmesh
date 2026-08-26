@@ -1,5 +1,6 @@
 import { config } from '../config/env.js';
 import { ApiError } from '../common/ApiError.js';
+import { fetchWithTimeout, isAbortError } from '../utils/http.js';
 
 const CONTROL_PLANE = 'https://api.pinecone.io';
 const TIMEOUT_MS = 20_000;
@@ -15,11 +16,9 @@ const requireEnabled = () => {
 };
 
 const request = async (url, { method = 'POST', body } = {}) => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   let res;
   try {
-    res = await fetch(url, {
+    res = await fetchWithTimeout(url, {
       method,
       headers: {
         'Api-Key': config.ai.pinecone.apiKey,
@@ -27,14 +26,12 @@ const request = async (url, { method = 'POST', body } = {}) => {
         'X-Pinecone-API-Version': '2025-01',
       },
       ...(body && { body: JSON.stringify(body) }),
-      signal: controller.signal,
+      timeoutMs: TIMEOUT_MS,
     });
   } catch (err) {
     throw ApiError.badGateway(
-      err.name === 'AbortError' ? 'Vector DB request timed out' : 'Could not reach the vector DB',
+      isAbortError(err) ? 'Vector DB request timed out' : 'Could not reach the vector DB',
     );
-  } finally {
-    clearTimeout(timer);
   }
 
   if (!res.ok) {
@@ -57,7 +54,7 @@ const dataPlaneHost = () => {
         return info.host;
       })
       .catch((err) => {
-        hostPromise = null; 
+        hostPromise = null;
         throw err;
       });
   }
@@ -78,6 +75,26 @@ export const queryVectors = async (namespace, vector, { topK = 8, filter } = {})
     body: { namespace, vector, topK, includeMetadata: true, ...(filter && { filter }) },
   });
   return result?.matches ?? [];
+};
+
+/**
+ * Reads specific vectors by id. Used to read the namespace's fingerprint sentinel,
+ * which is how ingestion knows whether an existing index is still current.
+ */
+export const fetchVectors = async (namespace, ids) => {
+  requireEnabled();
+  const params = new URLSearchParams({ namespace });
+  ids.forEach((id) => params.append('ids', id));
+  try {
+    const result = await request(await dataUrl(`/vectors/fetch?${params.toString()}`), {
+      method: 'GET',
+    });
+    return result?.vectors ?? {};
+  } catch (err) {
+    // An index that has never seen this namespace is not an error here.
+    if (err.statusCode === 404) return {};
+    throw err;
+  }
 };
 
 export const deleteNamespace = async (namespace) => {

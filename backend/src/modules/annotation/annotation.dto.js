@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ANNOTATION_TYPES, HIGHLIGHT_COLORS } from '@readmesh/shared';
+import { paginationQuery } from '../../utils/pagination.js';
 
 const nonEmpty = (max) => z.string().trim().min(1).max(max);
 
@@ -40,6 +41,7 @@ export const listAnnotationsSchema = z.object({
     name: nonEmpty(100),
     ref: nonEmpty(255),
     path: nonEmpty(1024).optional(),
+    ...paginationQuery,
   }),
 });
 

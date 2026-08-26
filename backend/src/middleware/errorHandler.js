@@ -4,7 +4,10 @@ import { ApiError } from '../common/ApiError.js';
 import { config } from '../config/env.js';
 
 export const notFoundHandler = (req, _res, next) => {
-  next(ApiError.notFound(`Route not found: ${req.method} ${req.originalUrl}`));
+  // The requested path is logged but deliberately not echoed into the response
+  // body — there is no reason to reflect caller-controlled text back out.
+  req.log?.debug({ method: req.method, url: req.originalUrl }, 'No route matched');
+  next(ApiError.notFound('Route not found'));
 };
 
 const fromPrisma = (error) => {
@@ -22,6 +25,19 @@ const fromPrisma = (error) => {
   }
 };
 
+/** Body-parser failures arrive as plain errors with a `type` discriminator. */
+const fromBodyParser = (error) => {
+  if (error.type === 'entity.too.large') {
+    return new ApiError(413, 'That content is too large to upload', {
+      code: 'PAYLOAD_TOO_LARGE',
+    });
+  }
+  if (error.type === 'entity.parse.failed') {
+    return ApiError.badRequest('Request body is not valid JSON');
+  }
+  return null;
+};
+
 export const errorHandler = (err, req, res, _next) => {
   let error = err;
 
@@ -32,12 +48,16 @@ export const errorHandler = (err, req, res, _next) => {
   } else if (error instanceof Prisma.PrismaClientValidationError) {
     error = ApiError.badRequest('Invalid database query');
   } else if (!(error instanceof ApiError)) {
-    error = ApiError.internal();
+    error = fromBodyParser(error) ?? ApiError.internal();
   }
 
   if (!error.isOperational || error.statusCode >= 500) {
     req.log?.error({ err, statusCode: error.statusCode }, err?.message ?? 'Unhandled error');
   }
+
+  // Headers are already on the wire for streaming endpoints (SSE); those handle
+  // their own error frames, so there is nothing left to send here.
+  if (res.headersSent) return;
 
   res.status(error.statusCode).json({
     success: false,

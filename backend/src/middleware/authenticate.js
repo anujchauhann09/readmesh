@@ -2,7 +2,6 @@ import { ApiError } from '../common/ApiError.js';
 import { verifyAccessToken } from '../utils/jwt.js';
 import { ACCESS_COOKIE } from '../utils/cookies.js';
 
-
 export const authenticate = (req, _res, next) => {
   const token = req.cookies?.[ACCESS_COOKIE];
   if (!token) return next(ApiError.unauthorized('Authentication required'));

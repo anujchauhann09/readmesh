@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from 'react';
 
+const HEADING_OFFSET = 96;
+
+/**
+ * Fallback slug for a heading the renderer somehow left without an id. Headings
+ * normally arrive with GitHub-compatible ids from `rehype-slug`, so this only
+ * covers content injected outside the Markdown pipeline.
+ */
 const slugify = (text) =>
   text
     .toLowerCase()
@@ -21,10 +28,14 @@ export function useToc(containerRef, contentKey) {
       setActiveId(null);
       return undefined;
     }
+
     const raf = requestAnimationFrame(() => {
       const els = [...root.querySelectorAll('h1, h2, h3, h4')];
       const seen = new Map();
+
       const items = els.map((el) => {
+        // Ids come from the render pipeline; only synthesise one if it is missing,
+        // so anchors stay stable and identical to what an export contains.
         if (!el.id) {
           const base = slugify(el.textContent || 'section');
           const n = seen.get(base) ?? 0;
@@ -33,8 +44,10 @@ export function useToc(containerRef, contentKey) {
         }
         return { id: el.id, text: el.textContent || '', depth: Number(el.tagName[1]) };
       });
+
       setHeadings(items);
     });
+
     return () => cancelAnimationFrame(raf);
   }, [containerRef, contentKey]);
 
@@ -43,13 +56,14 @@ export function useToc(containerRef, contentKey) {
       setActiveId(null);
       return undefined;
     }
+
     let ticking = false;
     const compute = () => {
       ticking = false;
       let current = headings[0].id;
       for (const { id } of headings) {
         const el = document.getElementById(id);
-        if (el && el.getBoundingClientRect().top - 96 <= 0) current = id;
+        if (el && el.getBoundingClientRect().top - HEADING_OFFSET <= 0) current = id;
         else break;
       }
       setActiveId(current);
@@ -60,6 +74,7 @@ export function useToc(containerRef, contentKey) {
         requestAnimationFrame(compute);
       }
     };
+
     compute();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);

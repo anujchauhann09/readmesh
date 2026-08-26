@@ -13,7 +13,18 @@ const isDark = () =>
   typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 
 
-export function ExportMenu({ getMarkdown, getRenderedEl, title = 'document', disabled }) {
+export function ExportMenu({
+  getMarkdown,
+  getRenderedEl,
+  title = 'document',
+  disabled,
+  onExported,
+}) {
+  const run = (fn) => () => {
+    fn();
+    onExported?.();
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -24,13 +35,13 @@ export function ExportMenu({ getMarkdown, getRenderedEl, title = 'document', dis
         Export
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => exportMarkdown(getMarkdown(), title)}>
+        <DropdownMenuItem onSelect={run(() => exportMarkdown(getMarkdown(), title))}>
           Markdown (.md)
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => exportHtml(getRenderedEl(), { title, dark: isDark() })}>
+        <DropdownMenuItem onSelect={run(() => exportHtml(getRenderedEl(), { title, dark: isDark() }))}>
           HTML (.html)
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => exportPdf(getRenderedEl(), { title, dark: isDark() })}>
+        <DropdownMenuItem onSelect={run(() => exportPdf(getRenderedEl(), { title, dark: isDark() }))}>
           PDF (print)
         </DropdownMenuItem>
       </DropdownMenuContent>

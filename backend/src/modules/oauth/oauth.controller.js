@@ -8,6 +8,7 @@ import {
   clearOAuthStateCookie,
   OAUTH_STATE_COOKIE,
 } from '../../utils/cookies.js';
+import { safeEqual } from '../../utils/jwt.js';
 import { issueTokens } from '../auth/auth.service.js';
 import { toPublicUser } from '../user/user.mapper.js';
 import * as oauthService from './oauth.service.js';
@@ -29,7 +30,7 @@ export const callback = asyncHandler(async (req, res) => {
   const { code, state } = req.validated.body;
 
   const expected = req.cookies?.[OAUTH_STATE_COOKIE];
-  if (!expected || state !== expected) {
+  if (!expected || !safeEqual(state, expected)) {
     throw ApiError.unauthorized('Your sign-in session expired. Please try again.');
   }
   clearOAuthStateCookie(res);

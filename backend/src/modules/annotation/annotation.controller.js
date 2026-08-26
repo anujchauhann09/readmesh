@@ -3,13 +3,19 @@ import { sendSuccess } from '../../common/ApiResponse.js';
 import * as annotationService from './annotation.service.js';
 
 export const create = asyncHandler(async (req, res) => {
-  const annotation = await annotationService.createAnnotation(req.user.publicId, req.validated.body);
+  const annotation = await annotationService.createAnnotation(
+    req.user.publicId,
+    req.validated.body,
+  );
   sendSuccess(res, { statusCode: 201, message: 'Annotation saved', data: { annotation } });
 });
 
 export const list = asyncHandler(async (req, res) => {
-  const annotations = await annotationService.listAnnotations(req.user.publicId, req.validated.query);
-  sendSuccess(res, { data: { annotations } });
+  const { annotations, meta } = await annotationService.listAnnotations(
+    req.user.publicId,
+    req.validated.query,
+  );
+  sendSuccess(res, { data: { annotations }, meta });
 });
 
 export const update = asyncHandler(async (req, res) => {

@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowUpRight, BookOpen, FileText, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowUpRight, BookOpen, FileText, Plus, Sparkles, Star, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDocuments } from '@/hooks/use-documents';
+import { useSavedRepos } from '@/hooks/use-saved-repos';
 import { useDialog } from '@/providers/dialog-provider';
 
 const formatDate = (value) => {
@@ -19,16 +20,23 @@ const formatDate = (value) => {
   }
 };
 
+const readerHref = (repo) => {
+  const params = new URLSearchParams({ repo: `${repo.owner}/${repo.name}` });
+  if (repo.ref) params.set('ref', repo.ref);
+  return `/read?${params.toString()}`;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { documents, isLoading, create, remove } = useDocuments();
+  const documents = useDocuments();
+  const savedRepos = useSavedRepos();
   const dialog = useDialog();
 
   if (!user) return null;
 
   const newDocument = () =>
-    create.mutate(
+    documents.create.mutate(
       { content: '# Untitled\n\n' },
       { onSuccess: (d) => router.push(`/editor/${d.id}`) },
     );
@@ -40,7 +48,17 @@ export default function DashboardPage() {
       confirmLabel: 'Delete',
       destructive: true,
     });
-    if (ok) remove.mutate(doc.id);
+    if (ok) documents.remove.mutate(doc.id);
+  };
+
+  const forgetRepo = async (repo) => {
+    const ok = await dialog.confirm({
+      title: `Remove ${repo.fullName}?`,
+      description: 'It disappears from this list. Nothing in the repository is affected.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (ok) savedRepos.remove.mutate(repo.id);
   };
 
   return (
@@ -50,13 +68,66 @@ export default function DashboardPage() {
           <span className="rm-node-dot" aria-hidden /> Workspace
         </span>
         <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-          Welcome back{user.displayName ? <span className="text-gradient">, {user.displayName}</span> : ''}.
+          Welcome back
+          {user.displayName ? <span className="text-gradient">, {user.displayName}</span> : ''}.
         </h1>
         <p className="mt-2 max-w-xl text-muted-foreground">
           Your saved documents live here, and you can point readmesh at any codebase to explore the
           mesh of knowledge inside it.
         </p>
       </div>
+
+      {/* Recently opened repositories */}
+      {savedRepos.repos.length > 0 && (
+        <section className="rm-rise-2 mt-8">
+          <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="rm-node-dot" aria-hidden /> Jump back in
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {savedRepos.repos.map((repo) => (
+              <div
+                key={repo.id}
+                className="rm-panel group relative flex items-start gap-3 p-4 transition-all hover:-translate-y-0.5 hover:border-brand-violet/50"
+              >
+                <Link href={readerHref(repo)} className="flex min-w-0 flex-1 items-start gap-3">
+                  <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border/70 bg-card/60 text-brand-cyan">
+                    <BookOpen className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{repo.fullName}</p>
+                    {repo.description && (
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {repo.description}
+                      </p>
+                    )}
+                    <div className="mt-1 flex items-center gap-2 text-[0.7rem] text-muted-foreground">
+                      {typeof repo.stars === 'number' && (
+                        <span className="inline-flex items-center gap-1">
+                          <Star className="h-3 w-3" /> {repo.stars.toLocaleString()}
+                        </span>
+                      )}
+                      {repo.language && <span>{repo.language}</span>}
+                      {repo.ref && <span className="font-mono">{repo.ref}</span>}
+                    </div>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => forgetRepo(repo)}
+                  aria-label={`Remove ${repo.fullName}`}
+                  title="Remove from this list"
+                  className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-destructive group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+          {savedRepos.hasMore && (
+            <LoadMore onClick={savedRepos.loadMore} busy={savedRepos.isLoadingMore} />
+          )}
+        </section>
+      )}
 
       {/* Documents */}
       <section className="rm-rise-2 mt-8">
@@ -73,12 +144,12 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {isLoading ? (
+        {documents.isLoading ? (
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rm-skeleton h-24" />
             <div className="rm-skeleton h-24" />
           </div>
-        ) : documents.length === 0 ? (
+        ) : documents.documents.length === 0 ? (
           <div className="rm-panel flex flex-col items-center gap-3 p-10 text-center">
             <span className="grid h-12 w-12 place-items-center rounded-2xl border border-border/70 bg-card/60 text-brand-violet">
               <FileText className="h-6 w-6" />
@@ -99,36 +170,43 @@ export default function DashboardPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="rm-panel group relative flex flex-col gap-2 p-4 transition-all hover:-translate-y-0.5 hover:border-brand-violet/50"
-              >
-                <Link href={`/editor/${doc.id}`} className="flex items-start gap-3">
-                  <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border/70 bg-card/60 text-brand-violet">
-                    <FileText className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{doc.title}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Edited {formatDate(doc.updatedAt)}
-                    </p>
-                  </div>
-                  <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => deleteDocument(doc)}
-                  aria-label="Delete document"
-                  title="Delete document"
-                  className="absolute bottom-3 right-3 rounded-md p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-destructive group-hover:opacity-100"
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {documents.documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="rm-panel group relative flex flex-col gap-2 p-4 transition-all hover:-translate-y-0.5 hover:border-brand-violet/50"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
+                  <Link href={`/editor/${doc.id}`} className="flex items-start gap-3">
+                    <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border/70 bg-card/60 text-brand-violet">
+                      <FileText className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{doc.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Edited {formatDate(doc.updatedAt)}
+                      </p>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => deleteDocument(doc)}
+                    aria-label={`Delete ${doc.title}`}
+                    title="Delete document"
+                    className="absolute bottom-3 right-3 rounded-md p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-destructive group-hover:opacity-100"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {/* The API pages collections; without this, documents past the first
+                page were simply invisible. */}
+            {documents.hasMore && (
+              <LoadMore onClick={documents.loadMore} busy={documents.isLoadingMore} />
+            )}
+          </>
         )}
       </section>
 
@@ -165,5 +243,20 @@ export default function DashboardPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function LoadMore({ onClick, busy }) {
+  return (
+    <div className="mt-3 flex justify-center">
+      <button
+        type="button"
+        onClick={() => onClick()}
+        disabled={busy}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/40 px-3 py-1.5 text-sm transition-colors hover:border-brand-violet/40 hover:bg-accent disabled:opacity-50"
+      >
+        {busy ? 'Loading…' : 'Load more'}
+      </button>
+    </div>
   );
 }

@@ -17,8 +17,21 @@ const display = Space_Grotesk({
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
 export const metadata = {
-  title: `${APP_NAME} — read the mesh of any codebase`,
+  // `template` lets each route contribute its own title without repeating the brand.
+  title: {
+    default: `${APP_NAME} — read the mesh of any codebase`,
+    template: `%s — ${APP_NAME}`,
+  },
   description: APP_TAGLINE,
+  applicationName: APP_NAME,
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/icon.svg', apple: '/icon.svg' },
+  openGraph: {
+    title: `${APP_NAME} — read the mesh of any codebase`,
+    description: APP_TAGLINE,
+    siteName: APP_NAME,
+    type: 'website',
+  },
 };
 
 export const viewport = {

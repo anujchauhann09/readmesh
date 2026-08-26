@@ -4,6 +4,8 @@ import { useTheme } from 'next-themes';
 import { Check, Palette } from 'lucide-react';
 import { THEMES } from '@readmesh/shared';
 import { useProfile } from '@/hooks/use-profile';
+import { useAuthGate } from '@/providers/auth-gate-provider';
+import { THEME_LABELS } from '@/lib/theme';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,23 +13,17 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 
-const LABELS = {
-  system: 'System',
-  light: 'Light',
-  dark: 'Dark',
-  github: 'GitHub',
-  dracula: 'Dracula',
-  nord: 'Nord',
-  vscode: 'VS Code',
-};
-
 export function ThemeMenu() {
   const { theme, setTheme } = useTheme();
   const { updatePreferences } = useProfile();
+  const { isAuthed } = useAuthGate();
 
   const choose = (next) => {
     setTheme(next);
-    updatePreferences.mutate({ theme: next });
+    // This menu also sits on the public home page. Persisting for a signed-out
+    // visitor produced a guaranteed 401 plus a pointless token-refresh attempt on
+    // every click, so the theme stays local until there is an account to save it to.
+    if (isAuthed) updatePreferences.mutate({ theme: next });
   };
 
   return (
@@ -38,12 +34,8 @@ export function ThemeMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {THEMES.map((t) => (
-          <DropdownMenuItem
-            key={t}
-            onSelect={() => choose(t)}
-            className="justify-between gap-6"
-          >
-            {LABELS[t] ?? t}
+          <DropdownMenuItem key={t} onSelect={() => choose(t)} className="justify-between gap-6">
+            {THEME_LABELS[t] ?? t}
             {theme === t && <Check className="h-3.5 w-3.5" />}
           </DropdownMenuItem>
         ))}

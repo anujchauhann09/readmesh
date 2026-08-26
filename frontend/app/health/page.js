@@ -1,12 +1,18 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { ROUTES } from '@readmesh/shared';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 
+/**
+ * A degraded backend answers 503 through the error envelope, not a 200 with a
+ * "degraded" status — so the per-service detail arrives on the *error*, and the
+ * page has to read it from there or it would only ever show "request failed".
+ */
 const fetchHealth = async () => {
-  const { data } = await apiClient.get('/health');
-  return data; // { success, data: { status, uptimeSeconds, timestamp, services } }
+  const { data } = await apiClient.get(ROUTES.HEALTH);
+  return data.data;
 };
 
 export default function HealthPage() {
@@ -15,8 +21,12 @@ export default function HealthPage() {
     queryFn: fetchHealth,
   });
 
-  const health = data?.data;
+  // `error.details` carries the same shape as a healthy payload when the API
+  // reports itself degraded; anything else is a genuine transport failure.
+  const degraded = error?.details?.services ? error.details : null;
+  const health = data ?? degraded;
   const ok = health?.status === 'ok';
+  const unreachable = isError && !degraded;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-6 px-6">
@@ -30,10 +40,16 @@ export default function HealthPage() {
       <div className="rounded-lg border border-border bg-card p-5 text-card-foreground">
         {isPending && <p className="text-muted-foreground">Checking…</p>}
 
-        {isError && (
+        {unreachable && (
           <p className="text-destructive">
             {error?.message ?? 'Could not reach the API.'}{' '}
             <span className="text-muted-foreground">({error?.code})</span>
+          </p>
+        )}
+
+        {degraded && (
+          <p className="mb-3 text-sm text-destructive">
+            {error?.message ?? 'One or more dependencies are unavailable.'}
           </p>
         )}
 

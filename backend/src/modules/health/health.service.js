@@ -1,6 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
 
-
 export const getHealthStatus = async () => {
   let database = 'up';
   try {

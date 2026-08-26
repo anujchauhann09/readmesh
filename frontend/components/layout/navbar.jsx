@@ -75,7 +75,7 @@ export function Navbar() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onSelect={() => logout.mutate(undefined, { onSuccess: () => router.replace('/') })}
+              onSelect={() => logout.mutate(undefined, { onSettled: () => router.replace('/') })}
             >
               <LogOut className="mr-2 h-4 w-4 text-muted-foreground" /> Log out
             </DropdownMenuItem>

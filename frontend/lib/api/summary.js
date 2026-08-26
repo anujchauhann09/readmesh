@@ -1,12 +1,13 @@
 import { ROUTES } from '@readmesh/shared';
 import { apiClient } from '@/lib/api-client';
+import { unwrapData } from './envelope';
 
 const { SUMMARY } = ROUTES;
 const path = (route) => `${SUMMARY.BASE}${route}`;
 
 const AI_TIMEOUT = 60_000;
 const post = (route, payload) =>
-  apiClient.post(path(route), payload, { timeout: AI_TIMEOUT }).then((r) => r.data.data);
+  apiClient.post(path(route), payload, { timeout: AI_TIMEOUT }).then(unwrapData);
 
 export const tldrRequest = ({ content, repoName }) =>
   post(SUMMARY.TLDR, { content, ...(repoName ? { repoName } : {}) });

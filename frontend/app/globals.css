@@ -529,6 +529,53 @@
   padding: 0;
 }
 
+/*
+  Line numbers and line highlighting for fenced code.
+
+  The numbers come from a CSS counter on Shiki's own `.line` spans rather than
+  from injected text, so selecting a block and copying it still yields only the
+  code — which is the whole point of the copy button sitting above it.
+*/
+.shiki-container .shiki code {
+  display: block;
+  counter-reset: rm-line;
+}
+.shiki-container .line {
+  display: inline-block;
+  width: 100%;
+  padding-inline: 0.25rem;
+  border-left: 2px solid transparent;
+}
+.shiki-container.has-line-numbers .line::before {
+  counter-increment: rm-line;
+  content: counter(rm-line);
+  display: inline-block;
+  width: 2.25rem;
+  margin-right: 0.9rem;
+  text-align: right;
+  color: hsl(var(--muted-foreground) / 0.55);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.shiki-container .line--highlighted {
+  background: hsl(var(--brand-violet) / 0.14);
+  border-left-color: hsl(var(--brand-violet) / 0.85);
+}
+/* Fade the rest so the emphasised lines actually stand out. */
+.shiki-container.has-highlighted-lines .line:not(.line--highlighted) {
+  opacity: 0.55;
+}
+.shiki-container.has-highlighted-lines:hover .line:not(.line--highlighted) {
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+@media print {
+  .shiki-container.has-highlighted-lines .line:not(.line--highlighted) {
+    opacity: 1;
+  }
+}
+
 .callout-body > :first-child {
   margin-top: 0;
 }
